@@ -1,830 +1,782 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
+  <meta charset="UTF-8">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
 
-    <title>NOVA MAX AI | 공식 홈페이지</title>
+  <meta name="description"
+        content="NOVA MAX AI 공식 홈페이지. 지능형 AI 반려 로봇 NOVA MAX의 Android 앱과 최신 프로젝트 정보를 확인하세요.">
 
-    <meta name="description"
-          content="NOVA MAX AI 공식 홈페이지. 지능형 AI 반려 로봇 NOVA MAX와 Android 앱, AI 기능 및 프로젝트 정보를 확인하세요.">
+  <meta name="keywords"
+        content="NOVA MAX AI, NOVA, AI 반려 로봇, Android 앱, Raspberry Pi, Arduino, BLE">
 
-    <meta name="keywords"
-          content="NOVA MAX AI, NOVA MAX, AI 반려 로봇, NOVA MAX Android 앱, AI 로봇">
+  <meta name="author"
+        content="NOVA MAX AI">
 
-    <meta name="author"
-          content="fingko0102">
+  <meta property="og:title"
+        content="NOVA MAX AI - 공식 홈페이지">
 
-    <meta name="theme-color"
-          content="#070b18">
+  <meta property="og:description"
+        content="지능형 AI 반려 로봇 NOVA MAX의 Android 앱과 프로젝트 정보를 확인하세요.">
 
-    <link rel="stylesheet" href="style.css">
+  <meta property="og:type"
+        content="website">
+
+  <title>NOVA MAX AI - 공식 홈페이지</title>
+
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<!-- =========================================
-     HEADER
-========================================= -->
+  <!-- =========================
+       HEADER
+  ========================== -->
+  <header class="header">
 
-<header class="header">
+    <a href="#top" class="logo">
+      <span class="logo-mark">N</span>
 
-    <div class="header-inner">
+      <span class="logo-text">
+        <strong>NOVA</strong>
+        <small>MAX AI</small>
+      </span>
+    </a>
 
-        <a href="#home" class="brand">
+    <button
+      class="menu-button"
+      id="menuButton"
+      aria-label="메뉴 열기"
+      aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
 
-            <div class="brand-icon">
-                N
-            </div>
+    <nav class="nav" id="nav">
 
-            <span>
-                NOVA MAX AI
-            </span>
+      <a href="#about">NOVA MAX</a>
+      <a href="#features">기능</a>
+      <a href="#android">Android 앱</a>
+      <a href="#project">프로젝트</a>
 
-        </a>
+      <a
+        href="https://fingko0102.github.io/"
+        class="nav-home">
+        공식 홈페이지
+      </a>
 
+    </nav>
 
-        <nav class="nav">
-
-            <a href="#about">
-                NOVA MAX
-            </a>
-
-            <a href="#features">
-                기능
-            </a>
-
-            <a href="#app">
-                Android 앱
-            </a>
-
-            <a href="#project">
-                프로젝트
-            </a>
-
-        </nav>
-
-
-        <button
-            class="menu-button"
-            aria-label="메뉴">
-
-            ☰
-
-        </button>
-
-    </div>
-
-</header>
+  </header>
 
 
-<!-- =========================================
-     HERO
-========================================= -->
+  <main id="top">
 
-<main>
+    <!-- =========================
+         HERO
+    ========================== -->
+    <section class="hero">
 
-<section id="home" class="hero">
+      <div class="hero-content">
 
-    <!-- Background decoration -->
-
-    <div class="hero-grid"></div>
-
-    <div class="glow glow-blue"></div>
-
-    <div class="glow glow-purple"></div>
-
-
-    <div class="hero-content">
-
-        <div class="nova-badge">
-
-            <span class="status-dot"></span>
-
-            NOVA MAX AI
-
+        <div class="hero-badge">
+          <span class="status-dot"></span>
+          NOVA MAX AI PROJECT
         </div>
 
-
         <h1>
-
-            당신을 위한<br>
-
-            <span class="gradient-text">
-                AI 반려 로봇
-            </span>
-
+          당신을 위한<br>
+          <span>AI 반려 로봇</span>
         </h1>
 
-
-        <p class="hero-description">
-
-            NOVA MAX와 함께 새로운 AI 경험을 시작하세요.
-            지능형 AI와 로봇 기술을 하나의 프로젝트로
-            만들어갑니다.
-
+        <p>
+          NOVA MAX와 함께<br>
+          새로운 AI 경험을 시작하세요.
         </p>
 
+        <p class="hero-description">
+          지능형 AI와 로봇 기술을 하나의 프로젝트로
+          만들어갑니다.
+        </p>
 
         <div class="hero-buttons">
 
-            <a
-                href="#about"
-                class="button button-primary">
+          <a href="#about" class="button primary">
+            NOVA MAX 알아보기
+            <span>↓</span>
+          </a>
 
-                NOVA MAX 알아보기
-
-                <span>→</span>
-
-            </a>
-
-
-            <a
-                href="#app"
-                class="button button-glass">
-
-                Android 앱
-
-                <span>↗</span>
-
-            </a>
+          <a href="#android" class="button secondary">
+            Android 앱
+          </a>
 
         </div>
 
+      </div>
 
-        <div class="hero-info">
+      <div class="hero-visual">
 
-            <div>
+        <div class="nova-orb">
 
-                <strong>
-                    AI
-                </strong>
+          <div class="orb-glow"></div>
 
-                <span>
-                    Intelligent
-                </span>
+          <div class="nova-letter">
+            N
+          </div>
 
-            </div>
-
-
-            <div>
-
-                <strong>
-                    BLE
-                </strong>
-
-                <span>
-                    Connected
-                </span>
-
-            </div>
-
-
-            <div>
-
-                <strong>
-                    24/7
-                </strong>
-
-                <span>
-                    Companion
-                </span>
-
-            </div>
+          <div class="orb-ring ring-one"></div>
+          <div class="orb-ring ring-two"></div>
 
         </div>
 
-    </div>
+      </div>
+
+    </section>
 
 
-    <!-- NOVA visual -->
+    <!-- =========================
+         3번째 카드
+         공식 홈페이지 버튼 포함
+    ========================== -->
+    <section class="quick-section">
 
-    <div class="hero-visual">
+      <div class="quick-grid">
 
-        <div class="orbit orbit-one"></div>
+        <!-- 1번째 카드 -->
+        <article class="quick-card">
 
-        <div class="orbit orbit-two"></div>
+          <div class="card-number">
+            01
+          </div>
 
+          <div class="card-icon">
+            🤖
+          </div>
 
-        <div class="nova-core">
+          <h2>
+            AI 비서
+          </h2>
 
-            <div class="nova-core-inner">
-
-                <span>
-                    N
-                </span>
-
-            </div>
-
-        </div>
-
-
-        <div class="nova-label">
-
-            <strong>
-                NOVA MAX
-            </strong>
-
-            <span>
-                INTELLIGENT AI COMPANION
-            </span>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- =========================================
-     ABOUT
-========================================= -->
-
-<section id="about" class="section about-section">
-
-    <div class="section-title">
-
-        <div class="section-tag">
-            ABOUT NOVA MAX
-        </div>
-
-        <h2>
-            AI와 로봇이<br>
-            하나가 되는 경험
-        </h2>
-
-        <p>
-            NOVA MAX는 AI 소프트웨어와 실제 로봇 하드웨어를
-            결합한 지능형 AI 반려 로봇 프로젝트입니다.
-        </p>
-
-    </div>
-
-
-    <div class="about-grid">
-
-
-        <article class="about-card">
-
-            <div class="card-top">
-
-                <div class="card-icon blue-icon">
-                    <span>✦</span>
-                </div>
-
-                <span class="card-number">
-                    01
-                </span>
-
-            </div>
-
-            <h3>
-                AI 비서
-            </h3>
-
-            <p>
-                음성 명령을 이해하고 AI가 자연스럽게
-                응답하는 지능형 비서 기능을 제공합니다.
-            </p>
-
-            <div class="card-line"></div>
+          <p>
+            음성 명령과 AI 기능을 이용해
+            사용자와 자연스럽게 상호작용합니다.
+          </p>
 
         </article>
 
 
-        <article class="about-card">
+        <!-- 2번째 카드 -->
+        <article class="quick-card">
 
-            <div class="card-top">
+          <div class="card-number">
+            02
+          </div>
 
-                <div class="card-icon purple-icon">
-                    <span>◉</span>
-                </div>
+          <div class="card-icon">
+            👁️
+          </div>
 
-                <span class="card-number">
-                    02
-                </span>
+          <h2>
+            AI 비전
+          </h2>
 
-            </div>
-
-            <h3>
-                AI 비전
-            </h3>
-
-            <p>
-                카메라를 활용해 주변 환경을 인식하고
-                다양한 AI 비전 기능을 제공합니다.
-            </p>
-
-            <div class="card-line"></div>
+          <p>
+            카메라를 활용해 주변 환경을 인식하고
+            다양한 AI 기능을 제공합니다.
+          </p>
 
         </article>
 
 
-        <article class="about-card">
+        <!-- 3번째 카드 -->
+        <article class="quick-card featured-card">
 
-            <div class="card-top">
+          <div class="card-number">
+            03
+          </div>
 
-                <div class="card-icon cyan-icon">
-                    <span>⚙</span>
-                </div>
+          <div class="card-icon">
+            🌐
+          </div>
 
-                <span class="card-number">
-                    03
-                </span>
+          <h2>
+            NOVA MAX AI
+          </h2>
 
-            </div>
+          <p>
+            NOVA MAX의 Android 앱과
+            최신 프로젝트 정보를 확인하세요.
+          </p>
 
-            <h3>
-                로봇 제어
-            </h3>
-
-            <p>
-                Raspberry Pi와 Arduino를 활용해
-                모터와 센서 등 실제 하드웨어를 제어합니다.
-            </p>
-
-            <div class="card-line"></div>
+          <!-- 공식 홈페이지 버튼 -->
+          <a
+            href="https://fingko0102.github.io/"
+            class="card-home-button">
+            🌐 공식 홈페이지
+            <span>↗</span>
+          </a>
 
         </article>
 
-    </div>
+      </div>
 
-</section>
-
-
-<!-- =========================================
-     FEATURES
-========================================= -->
-
-<section id="features"
-         class="section features-section">
-
-    <div class="features-container">
+    </section>
 
 
-        <div class="section-title">
+    <!-- =========================
+         ABOUT
+    ========================== -->
+    <section
+      class="section about"
+      id="about">
 
-            <div class="section-tag">
-                FEATURES
-            </div>
+      <div class="section-label">
+        ABOUT NOVA MAX
+      </div>
 
-            <h2>
-                NOVA의 핵심 기능
-            </h2>
+      <h2 class="section-title">
+        NOVA MAX란?
+      </h2>
+
+      <p class="section-description">
+        AI와 로봇 기술을 결합한
+        지능형 AI 반려 로봇 프로젝트입니다.
+      </p>
+
+
+      <div class="about-grid">
+
+        <article class="info-card">
+
+          <div class="info-icon">
+            🎙️
+          </div>
+
+          <h3>
+            AI 비서
+          </h3>
+
+          <p>
+            음성 명령과 AI를 이용해
+            사용자와 자연스럽게 대화합니다.
+          </p>
+
+        </article>
+
+
+        <article class="info-card">
+
+          <div class="info-icon">
+            👁️
+          </div>
+
+          <h3>
+            AI 비전
+          </h3>
+
+          <p>
+            카메라를 이용해 주변 환경을
+            인식하고 다양한 기능을 제공합니다.
+          </p>
+
+        </article>
+
+
+        <article class="info-card">
+
+          <div class="info-icon">
+            ⚙️
+          </div>
+
+          <h3>
+            로봇 제어
+          </h3>
+
+          <p>
+            Raspberry Pi와 Arduino를 이용해
+            실제 하드웨어를 제어합니다.
+          </p>
+
+        </article>
+
+      </div>
+
+    </section>
+
+
+    <!-- =========================
+         FEATURES
+    ========================== -->
+    <section
+      class="section features"
+      id="features">
+
+      <div class="section-label">
+        FEATURES
+      </div>
+
+      <h2 class="section-title">
+        주요 기능
+      </h2>
+
+
+      <div class="feature-list">
+
+        <article class="feature-item">
+
+          <span class="feature-number">
+            01
+          </span>
+
+          <div>
+            <h3>
+              음성 AI
+            </h3>
 
             <p>
-                소프트웨어부터 연결 기술,
-                실제 로봇 하드웨어까지.
+              사용자의 음성을 인식하고
+              AI가 자연스럽게 응답합니다.
             </p>
+          </div>
 
-        </div>
-
-
-        <div class="feature-list">
+        </article>
 
 
-            <div class="feature-item">
+        <article class="feature-item">
 
-                <div class="feature-number">
-                    01
-                </div>
+          <span class="feature-number">
+            02
+          </span>
 
-                <div class="feature-icon">
-                    🎙️
-                </div>
+          <div>
+            <h3>
+              Android 앱
+            </h3>
 
-                <div class="feature-content">
+            <p>
+              스마트폰에서 NOVA MAX의
+              다양한 기능을 확인하고 제어합니다.
+            </p>
+          </div>
 
-                    <h3>
-                        음성 AI
-                    </h3>
-
-                    <p>
-                        사용자의 음성을 인식하고
-                        AI가 자연스럽게 응답합니다.
-                    </p>
-
-                </div>
-
-                <div class="feature-arrow">
-                    →
-                </div>
-
-            </div>
+        </article>
 
 
-            <div class="feature-item">
+        <article class="feature-item">
 
-                <div class="feature-number">
-                    02
-                </div>
+          <span class="feature-number">
+            03
+          </span>
 
-                <div class="feature-icon">
-                    📱
-                </div>
+          <div>
+            <h3>
+              BLE 연결
+            </h3>
 
-                <div class="feature-content">
+            <p>
+              Bluetooth Low Energy를 이용해
+              Android와 NOVA MAX를 연결합니다.
+            </p>
+          </div>
 
-                    <h3>
-                        Android 앱
-                    </h3>
-
-                    <p>
-                        스마트폰에서 NOVA MAX의
-                        기능을 확인하고 제어합니다.
-                    </p>
-
-                </div>
-
-                <div class="feature-arrow">
-                    →
-                </div>
-
-            </div>
+        </article>
 
 
-            <div class="feature-item">
+        <article class="feature-item">
 
-                <div class="feature-number">
-                    03
-                </div>
+          <span class="feature-number">
+            04
+          </span>
 
-                <div class="feature-icon">
-                    🔵
-                </div>
+          <div>
+            <h3>
+              로봇 하드웨어
+            </h3>
 
-                <div class="feature-content">
+            <p>
+              Raspberry Pi, Arduino 및
+              다양한 센서와 모터를 활용합니다.
+            </p>
+          </div>
 
-                    <h3>
-                        BLE 연결
-                    </h3>
+        </article>
 
-                    <p>
-                        Bluetooth Low Energy를 이용해
-                        Android와 NOVA MAX를 연결합니다.
-                    </p>
+      </div>
 
-                </div>
-
-                <div class="feature-arrow">
-                    →
-                </div>
-
-            </div>
+    </section>
 
 
-            <div class="feature-item">
+    <!-- =========================
+         ANDROID APP
+    ========================== -->
+    <section
+      class="section android-section"
+      id="android">
 
-                <div class="feature-number">
-                    04
-                </div>
-
-                <div class="feature-icon">
-                    🤖
-                </div>
-
-                <div class="feature-content">
-
-                    <h3>
-                        로봇 하드웨어
-                    </h3>
-
-                    <p>
-                        Raspberry Pi, Arduino,
-                        센서와 모터를 활용합니다.
-                    </p>
-
-                </div>
-
-                <div class="feature-arrow">
-                    →
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- =========================================
-     ANDROID APP
-========================================= -->
-
-<section id="app" class="section app-section">
-
-    <div class="app-card">
-
-
-        <div class="app-background-glow"></div>
-
+      <div class="app-card">
 
         <div class="app-content">
 
-            <div class="section-tag">
-                ANDROID APP
-            </div>
+          <div class="section-label">
+            ANDROID APP
+          </div>
 
-            <h2>
-                NOVA MAX를<br>
-                손안에서.
-            </h2>
+          <h2>
+            NOVA MAX<br>
+            <span>Android 앱</span>
+          </h2>
 
-            <p>
-                NOVA MAX Android 앱을 통해
-                AI 기능과 로봇을 더욱 편리하게
-                사용할 수 있습니다.
-            </p>
+          <p>
+            NOVA MAX의 Android 앱을 통해
+            AI 기능과 로봇을 더욱 편리하게
+            사용할 수 있습니다.
+          </p>
 
+          <div class="app-buttons">
 
             <a
-                href="#"
-                class="button button-primary">
-
-                앱 알아보기
-
-                <span>
-                    →
-                </span>
-
+              href="#project"
+              class="button primary">
+              앱 알아보기
+              <span>→</span>
             </a>
 
-        </div>
-
-
-        <!-- Phone -->
-
-        <div class="phone-area">
-
-            <div class="phone-shadow"></div>
-
-            <div class="phone">
-
-                <div class="phone-speaker"></div>
-
-
-                <div class="phone-screen">
-
-
-                    <div class="phone-status">
-                        9:41
-                    </div>
-
-
-                    <div class="phone-app-icon">
-
-                        N
-
-                    </div>
-
-
-                    <strong class="phone-title">
-                        NOVA
-                    </strong>
-
-                    <span class="phone-subtitle">
-                        MAX AI
-                    </span>
-
-
-                    <div class="phone-ai-card">
-
-                        <div class="ai-pulse"></div>
-
-                        <span>
-                            NOVA가 준비되었습니다
-                        </span>
-
-                    </div>
-
-                </div>
-
-            </div>
+          </div>
 
         </div>
 
-    </div>
 
-</section>
+        <div class="phone-preview">
 
+          <div class="phone">
 
-<!-- =========================================
-     PROJECT
-========================================= -->
+            <div class="phone-camera"></div>
 
-<section id="project"
-         class="section project-section">
+            <div class="phone-screen">
 
-    <div class="section-title">
+              <div class="screen-logo">
+                N
+              </div>
 
-        <div class="section-tag">
-            PROJECT
+              <strong>
+                NOVA MAX
+              </strong>
+
+              <small>
+                AI Companion
+              </small>
+
+              <div class="screen-orb"></div>
+
+            </div>
+
+          </div>
+
         </div>
 
-        <h2>
-            NOVA를 만드는 기술
-        </h2>
+      </div>
 
-        <p>
-            AI 소프트웨어와 실제 하드웨어를 연결해
-            하나의 AI 로봇 시스템을 만들어갑니다.
-        </p>
-
-    </div>
+    </section>
 
 
-    <div class="tech-grid">
+    <!-- =========================
+         PROJECT
+    ========================== -->
+    <section
+      class="section project"
+      id="project">
+
+      <div class="section-label">
+        PROJECT
+      </div>
+
+      <h2 class="section-title">
+        NOVA 프로젝트
+      </h2>
+
+      <p class="section-description">
+        AI 소프트웨어부터 실제 로봇 하드웨어까지
+        NOVA MAX를 구성하는 기술입니다.
+      </p>
 
 
-        <article class="tech-card">
+      <div class="project-grid">
 
-            <div class="tech-logo">
-                Pi
-            </div>
+        <article class="project-card">
 
-            <h3>
-                Raspberry Pi
-            </h3>
+          <span class="project-icon">
+            🥧
+          </span>
 
-            <p>
-                AI · 서버 · 로봇 제어
-            </p>
+          <h3>
+            Raspberry Pi
+          </h3>
 
-        </article>
-
-
-        <article class="tech-card">
-
-            <div class="tech-logo">
-                Ar
-            </div>
-
-            <h3>
-                Arduino
-            </h3>
-
-            <p>
-                모터 · 서보 · 센서
-            </p>
+          <p>
+            AI · 서버 · 로봇 제어
+          </p>
 
         </article>
 
 
-        <article class="tech-card">
+        <article class="project-card">
 
-            <div class="tech-logo">
-                ◉
-            </div>
+          <span class="project-icon">
+            🔧
+          </span>
 
-            <h3>
-                Bluetooth
-            </h3>
+          <h3>
+            Arduino
+          </h3>
 
-            <p>
-                Android · BLE 통신
-            </p>
+          <p>
+            모터 · 서보 · 하드웨어 제어
+          </p>
+
+        </article>
+
+
+        <article class="project-card">
+
+          <span class="project-icon">
+            📡
+          </span>
+
+          <h3>
+            Bluetooth
+          </h3>
+
+          <p>
+            Android · BLE 통신
+          </p>
 
         </article>
 
 
-        <article class="tech-card">
+        <article class="project-card">
 
-            <div class="tech-logo">
-                A
-            </div>
+          <span class="project-icon">
+            📱
+          </span>
 
-            <h3>
-                Android
-            </h3>
+          <h3>
+            Android
+          </h3>
 
-            <p>
-                NOVA MAX 앱
-            </p>
+          <p>
+            NOVA MAX 앱
+          </p>
 
         </article>
 
-    </div>
+      </div>
 
-</section>
+    </section>
 
 
-<!-- =========================================
-     CTA
-========================================= -->
+    <!-- =========================
+         CTA
+    ========================== -->
+    <section class="cta">
 
-<section class="cta-section">
+      <div class="cta-glow"></div>
 
-    <div class="cta-glow"></div>
+      <div class="cta-content">
 
-    <div class="cta-content">
-
-        <div class="section-tag">
-            NOVA MAX AI
+        <div class="cta-logo">
+          N
         </div>
 
         <h2>
-            새로운 AI 경험을<br>
-            시작해 보세요.
+          새로운 AI 경험을<br>
+          시작해 보세요.
         </h2>
-
-        <p>
-            NOVA MAX와 함께 미래의 AI를 만들어갑니다.
-        </p>
 
         <a
-            href="#app"
-            class="button button-white">
-
-            NOVA MAX 시작하기
-
-            <span>
-                →
-            </span>
-
+          href="https://fingko0102.github.io/"
+          class="button cta-button">
+          NOVA MAX 시작하기
+          <span>↗</span>
         </a>
 
-    </div>
+      </div>
 
-</section>
+    </section>
 
-</main>
-
-
-<!-- =========================================
-     FOOTER
-========================================= -->
-
-<footer class="footer">
-
-    <div class="footer-inner">
+  </main>
 
 
-        <div class="footer-brand">
+  <!-- =========================
+       FOOTER
+  ========================== -->
+  <footer class="footer">
 
-            <div class="footer-logo">
-                N
-            </div>
+    <div class="footer-brand">
 
-            <div>
+      <div class="footer-logo">
+        N
+      </div>
 
-                <strong>
-                    NOVA MAX AI
-                </strong>
+      <div>
+        <strong>
+          NOVA MAX AI
+        </strong>
 
-                <p>
-                    지능형 AI 반려 로봇 프로젝트
-                </p>
-
-            </div>
-
-        </div>
-
-
-        <div class="footer-links">
-
-            <a href="#home">
-                Home
-            </a>
-
-            <a href="#about">
-                NOVA MAX
-            </a>
-
-            <a href="#features">
-                기능
-            </a>
-
-            <a href="#app">
-                Android 앱
-            </a>
-
-            <a
-                href="https://github.com/fingko0102"
-                target="_blank"
-                rel="noopener">
-
-                GitHub
-
-            </a>
-
-        </div>
+        <p>
+          지능형 AI 반려 로봇 프로젝트
+        </p>
+      </div>
 
     </div>
 
 
-    <div class="copyright">
+    <div class="footer-links">
 
-        © 2026 NOVA MAX AI.
-        All rights reserved.
+      <a href="#about">
+        NOVA MAX
+      </a>
+
+      <a href="#features">
+        기능
+      </a>
+
+      <a href="#android">
+        Android 앱
+      </a>
+
+      <a href="https://fingko0102.github.io/">
+        공식 홈페이지
+      </a>
 
     </div>
 
-</footer>
 
+    <div class="footer-bottom">
+
+      <span>
+        © 2026 NOVA MAX AI. All rights reserved.
+      </span>
+
+      <a href="#top">
+        ↑ 맨 위로
+      </a>
+
+    </div>
+
+  </footer>
+
+
+  <!-- =========================
+       JAVASCRIPT
+  ========================== -->
+  <script>
+
+    const menuButton =
+      document.getElementById("menuButton");
+
+    const nav =
+      document.getElementById("nav");
+
+
+    /* 모바일 메뉴 */
+    menuButton.addEventListener("click", () => {
+
+      const opened =
+        nav.classList.toggle("active");
+
+      menuButton.setAttribute(
+        "aria-expanded",
+        opened
+      );
+
+    });
+
+
+    /* 메뉴 클릭 후 자동 닫기 */
+    document.querySelectorAll(".nav a")
+      .forEach(link => {
+
+        link.addEventListener("click", () => {
+
+          nav.classList.remove("active");
+
+          menuButton.setAttribute(
+            "aria-expanded",
+            "false"
+          );
+
+        });
+
+      });
+
+
+    /* 부드러운 내부 스크롤 */
+    document.querySelectorAll(
+      'a[href^="#"]'
+    ).forEach(link => {
+
+      link.addEventListener("click", event => {
+
+        const targetId =
+          link.getAttribute("href");
+
+        if (
+          targetId === "#" ||
+          targetId === "#top"
+        ) {
+
+          event.preventDefault();
+
+          window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+          });
+
+          return;
+        }
+
+
+        const target =
+          document.querySelector(targetId);
+
+        if (target) {
+
+          event.preventDefault();
+
+          target.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+          });
+
+        }
+
+      });
+
+    });
+
+
+    /* 스크롤 시 헤더 효과 */
+    const header =
+      document.querySelector(".header");
+
+    window.addEventListener("scroll", () => {
+
+      if (window.scrollY > 30) {
+
+        header.classList.add("scrolled");
+
+      } else {
+
+        header.classList.remove("scrolled");
+
+      }
+
+    });
+
+  </script>
 
 </body>
 </html>
