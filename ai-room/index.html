@@ -931,6 +931,7 @@
     themeMode: "system",
     turns: 4,
     preset: 0,
+    pinned: true,
     debate: { active:false, issue:"", total:0, done:0 },
     booted: false
   };
@@ -1631,7 +1632,8 @@
     renderStatus();
     renderStrip();
     renderDebateBar();
-    renderThread({ scroll: isNearBottom() ? "bottom" : "keep", smooth: true });
+    if (state.pinned || isNearBottom()) scrollBottom(true);
+    else renderThread({ scroll:"keep" });
     renderSettings();
   }
 
@@ -2049,6 +2051,7 @@
     addUserMessage(text);
     input.value = "";
     autoGrow(input);
+    state.pinned = true;
     renderThread({ scroll:"bottom", force:true, smooth:true });
     renderSettings();
 
@@ -2126,6 +2129,7 @@
     stopReplies(true);
     var planned = planDebate(theme, state.turns);
     state.debate = { active:true, issue:planned.issue, total:planned.plan.length, done:0 };
+    state.pinned = true;
     setTab("chat");
     addSys("AI끼리 대화를 시작했어요 · 주제: " + (theme.length > 44 ? theme.slice(0, 44) + "…" : theme));
     renderStatus();
@@ -2307,7 +2311,10 @@
   });
 
   document.addEventListener("scroll", function (e) {
-    if (e.target && e.target.id === "thread") renderJump();
+    if (e.target && e.target.id === "thread") {
+      state.pinned = isNearBottom();
+      renderJump();
+    }
   }, true);
 
   window.addEventListener("resize", function () { renderJump(); });
