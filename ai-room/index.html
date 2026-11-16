@@ -32,6 +32,12 @@
   .app{max-width:1040px;margin:0 auto;padding:22px 16px 72px}
   .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 
+  /* ---------- 실제 앱 아이콘 (이모지는 뒤에 깔리는 폴백) ---------- */
+  .av,.chip .em,.mini-wrap{position:relative;overflow:hidden}
+  .av>.fb,.chip .em>.fb,.mini-wrap>.fb{line-height:1}
+  .av>img.ic,.chip .em>img.ic,.mini-wrap>img.ic{position:absolute;top:0;left:0;display:block;width:100%;height:100%;object-fit:cover;object-position:center;border-radius:inherit}
+  .mini-wrap{display:inline-grid;place-items:center;width:15px;height:15px;border-radius:4px;font-size:11px;background:#EFF3F5;vertical-align:-3px;margin-right:2px}
+
   /* ---------- hero ---------- */
   .hero{padding:6px 2px 0}
   .hero .eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:800;letter-spacing:.02em;color:var(--brand);background:var(--brand-soft);border-radius:999px;padding:5px 11px}
@@ -65,7 +71,7 @@
   .chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
   .chips::-webkit-scrollbar{display:none}
   .chip{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;border:2px solid transparent;background:#fff;border-radius:999px;padding:9px 14px;font-size:13.5px;font-weight:800;color:#3B444F;cursor:pointer;white-space:nowrap;transition:border-color .15s,background .15s}
-  .chip .em{font-size:15px;line-height:1}
+  .chip .em{display:inline-grid;place-items:center;width:19px;height:19px;border-radius:6px;font-size:15px;line-height:1;overflow:hidden}
   .chip.on{border-color:var(--brand);background:var(--brand-soft);color:#0E7A56}
 
   .compose textarea{width:100%;min-height:104px;border:0;border-radius:16px;padding:14px 15px;font:inherit;font-size:15px;line-height:1.6;resize:vertical;background:#fff;color:var(--ink)}
@@ -265,16 +271,16 @@
      1. AI 명단
      =============================================================== */
   var AI = {
-    pickle:  { key:"pickle",  name:"피클", emoji:"🥒", role:"실행 · 전화 · 예약", badge:"실행", color:"#12996C", soft:"#E7F8F0" },
-    keyring: { key:"keyring", name:"키링", emoji:"🔑", role:"일정 · 정리",     badge:"일정", color:"#C9820F", soft:"#FFF4E1" },
-    cue:     { key:"cue",     name:"Cue",  emoji:"🎧", role:"자료조사 · 분석",  badge:"조사", color:"#4A76DF", soft:"#ECF1FE" },
-    muse:    { key:"muse",    name:"뮤즈", emoji:"✨", role:"쇼핑 · 장기계획",  badge:"계획", color:"#9152DE", soft:"#F3ECFE" },
-    buoy:    { key:"buoy",    name:"부이", emoji:"🌐", role:"비교 · 취향추천",  badge:"비교", color:"#0E9DAD", soft:"#E4F8FB" }
+    pickle:  { key:"pickle",  name:"피클", emoji:"🥒", icon:"./icons/pickle.png",  role:"실행 · 전화 · 예약", badge:"실행", color:"#12996C", soft:"#E7F8F0" },
+    keyring: { key:"keyring", name:"키링", emoji:"🔑", icon:"./icons/keyring.png", role:"일정 · 정리",     badge:"일정", color:"#C9820F", soft:"#FFF4E1" },
+    cue:     { key:"cue",     name:"Cue",  emoji:"🎧", icon:"./icons/cue.png",     role:"자료조사 · 분석",  badge:"조사", color:"#4A76DF", soft:"#ECF1FE" },
+    muse:    { key:"muse",    name:"뮤즈", emoji:"✨", icon:"./icons/muse.png",    role:"쇼핑 · 장기계획",  badge:"계획", color:"#9152DE", soft:"#F3ECFE" },
+    buoy:    { key:"buoy",    name:"부이", emoji:"🌐", icon:"./icons/vooy.png",    role:"비교 · 취향추천",  badge:"비교", color:"#0E9DAD", soft:"#E4F8FB" }
   };
   var ME = { key:"jihun", name:"지훈", emoji:"🧑‍🔧", badge:"나", color:"#3B4453", soft:"#EEF1F6" };
   var ORDER = ["pickle", "keyring", "cue", "muse", "buoy"];
   var TARGETS = [{ key:"all", name:"모두에게", emoji:"📣" }];
-  ORDER.forEach(function (k) { TARGETS.push({ key:k, name:AI[k].name, emoji:AI[k].emoji }); });
+  ORDER.forEach(function (k) { TARGETS.push({ key:k, name:AI[k].name, emoji:AI[k].emoji, icon:AI[k].icon }); });
 
   var DESC = {
     pickle:  "전화·예약·실행까지 직접 하는 역할이에요. 날씨 확인, 예약 문의, 결제 전 확인처럼 ‘실제로 해야 하는 일’을 맡아요.",
@@ -444,6 +450,17 @@
   }
 
   function agentOf(key) { return AI[key] || ME; }
+
+  /* 앱 아이콘 이미지. 파일이 없거나 깨지면 지워지고 뒤에 깔린 이모지가 보인다. */
+  function iconImg(a, alt) {
+    if (!a || !a.icon) return "";
+    return '<img class="ic" src="' + esc(a.icon) + '" alt="' + esc(alt || "") + '"' +
+      ' decoding="async" onerror="this.remove()">';
+  }
+
+  function avatarFace(a, alt) {
+    return '<span class="fb">' + esc(a.emoji) + "</span>" + iconImg(a, alt);
+  }
 
   function pickVary(bucket, arr) {
     var counts = pickVary.counts;
@@ -835,17 +852,18 @@
   /* ===============================================================
      8. 그리기
      =============================================================== */
-  function avatarHtml(key, size) {
+  function avatarHtml(key, size, alt) {
     var a = agentOf(key);
     var s = size || 38;
     return '<div class="av" style="background:' + a.soft + ";width:" + s + "px;height:" + s + "px;font-size:" +
-      Math.round(s * 0.5) + 'px">' + a.emoji + "</div>";
+      Math.round(s * 0.5) + 'px">' + avatarFace(a, alt) + "</div>";
   }
 
   function renderHero() {
     var html = "";
     ORDER.forEach(function (k) {
-      html += '<div class="av" style="background:' + AI[k].soft + '">' + AI[k].emoji + "</div>";
+      var a = AI[k];
+      html += '<div class="av" style="background:' + a.soft + '">' + avatarFace(a, a.name + " 앱 아이콘") + "</div>";
     });
     $("hero-avatars").innerHTML = html;
   }
@@ -855,7 +873,7 @@
     TARGETS.forEach(function (t) {
       var on = state.target === t.key ? " on" : "";
       html += '<button class="chip' + on + '" data-act="target" data-value="' + t.key + '">' +
-        '<span class="em">' + t.emoji + "</span>" + esc(t.name) + "</button>";
+        '<span class="em">' + avatarFace(t, "") + "</span>" + esc(t.name) + "</button>";
     });
     $("target-chips").innerHTML = html;
   }
@@ -967,12 +985,12 @@
       html +=
         '<article class="member" style="--c:' + a.color + ";--cs:" + a.soft + '">' +
           '<div class="member-top">' +
-            '<div class="av" style="background:' + a.soft + '">' + a.emoji + "</div>" +
+            '<div class="av" style="background:' + a.soft + '">' + avatarFace(a, a.name + " 앱 아이콘") + "</div>" +
             "<div><h3>" + esc(a.name) + "</h3><p class=\"role\">" + esc(a.role) + "</p></div>" +
           "</div>" +
           '<p class="member-desc">' + esc(DESC[k]) + "</p>" +
           '<div class="member-foot">' +
-            '<span class="who">' + esc(a.emoji) + " " + esc(a.name) + "에게 바로 말 걸기</span>" +
+            '<span class="who"><span class="mini-wrap">' + avatarFace(a, "") + "</span>" + esc(a.name) + "에게 바로 말 걸기</span>" +
             '<button class="btn talk" data-act="talk" data-key="' + k + '">말 걸기</button>' +
           "</div>" +
         "</article>";
