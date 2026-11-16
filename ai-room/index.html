@@ -459,7 +459,7 @@
   }
 
   function avatarFace(a, alt) {
-    return '<span class="fb">' + esc(a.emoji) + "</span>" + iconImg(a, alt);
+    return '<span class="fb" aria-hidden="true">' + esc(a.emoji) + "</span>" + iconImg(a, alt);
   }
 
   function pickVary(bucket, arr) {
