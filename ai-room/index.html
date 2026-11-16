@@ -1631,7 +1631,7 @@
     renderStatus();
     renderStrip();
     renderDebateBar();
-    renderThread({ scroll:"keep" });
+    renderThread({ scroll: isNearBottom() ? "bottom" : "keep", smooth: true });
     renderSettings();
   }
 
