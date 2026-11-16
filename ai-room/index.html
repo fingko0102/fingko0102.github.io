@@ -792,6 +792,19 @@
         </div>
 
         <div class="card">
+          <div class="card-head">
+            <h3 class="card-title">AI끼리 대화 턴</h3>
+            <span class="state-badge"><i></i><span>기본 20턴</span></span>
+          </div>
+          <p class="tiny">5명이 번갈아 말하는 횟수예요. 길게 볼수록 앞사람 말을 더 깊게 이어 가요.</p>
+          <div class="seg" id="settings-turns" role="group" aria-label="AI끼리 대화 턴 수" style="margin-top:10px">
+            <button data-act="turns" data-value="10">10턴</button>
+            <button data-act="turns" data-value="20">20턴</button>
+            <button data-act="turns" data-value="30">30턴</button>
+          </div>
+        </div>
+
+        <div class="card">
           <div class="card-head"><h3 class="card-title">대화 내역</h3></div>
           <p class="tiny">JSON으로 내려받아 두면 나중에 다시 볼 수 있어요. 초기화하면 되돌릴 수 없어요.</p>
           <div class="btn-row">
@@ -2761,9 +2774,7 @@
     el.innerHTML = html;
   }
   function renderTurns() {
-    var el = $("sheet-turns");
-    if (!el) return;
-    var btns = el.querySelectorAll("button");
+    var btns = document.querySelectorAll('[data-act="turns"]');
     for (var i = 0; i < btns.length; i++) {
       btns[i].className = String(state.turns) === btns[i].getAttribute("data-value") ? "on" : "";
     }
