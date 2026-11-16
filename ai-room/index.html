@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F7F8">
+<title>AI 협업 방 · 5 AI</title>
+<style>
+  :root{
+    --bg:#F4F6F7;
+    --card:#FFFFFF;
+    --ink:#1B2430;
+    --sub:#6B7684;
+    --line:#E6EBEE;
+    --brand:#16A97B;
+    --brand-soft:#E7F8F1;
+    --task-soft:#FFF7E8;
+    --radius:22px;
+    --shadow:0 1px 2px rgba(16,24,40,.04), 0 10px 28px rgba(16,24,40,.055);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+    word-break:keep-all;
+  }
+  button{font:inherit;color:inherit}
+  .app{max-width:1040px;margin:0 auto;padding:22px 16px 72px}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+  /* ---------- hero ---------- */
+  .hero{padding:6px 2px 0}
+  .hero .eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:800;letter-spacing:.02em;color:var(--brand);background:var(--brand-soft);border-radius:999px;padding:5px 11px}
+  .hero h1{margin:14px 0 16px;font-size:clamp(27px,7.6vw,40px);line-height:1.24;letter-spacing:-.035em;font-weight:800}
+  .hero-sub{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .avatar-stack{display:flex;align-items:center;padding-left:6px}
+  .avatar-stack .av{width:40px;height:40px;border-radius:14px;display:grid;place-items:center;font-size:20px;margin-left:-7px;border:2px solid var(--bg);box-shadow:0 2px 6px rgba(16,24,40,.10)}
+  .hero-sub .label{font-size:14px;font-weight:700;color:var(--sub)}
+  .hero-sub .label b{color:var(--ink)}
+
+  /* ---------- tabs ---------- */
+  .tabs{position:sticky;top:0;z-index:30;display:flex;gap:4px;background:#E9EDEF;border-radius:999px;padding:5px;margin:20px 0 18px;box-shadow:0 1px 2px rgba(16,24,40,.05)}
+  .tab{flex:1;border:0;background:transparent;border-radius:999px;padding:11px 6px;font-size:14.5px;font-weight:800;color:#6B7684;cursor:pointer;transition:background .15s,color .15s}
+  .tab.on{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(16,24,40,.12)}
+  .panel{display:none}
+  .panel.on{display:block}
+
+  /* ---------- generic ---------- */
+  .card{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);border:1px solid rgba(230,235,238,.85)}
+  .card + .card{margin-top:14px}
+  .card-title{margin:0;font-size:16px;font-weight:800;letter-spacing:-.01em}
+  .tiny{margin:10px 0 0;font-size:12px;line-height:1.55;color:#8A94A0}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px}
+
+  /* ---------- compose ---------- */
+  .chat-grid{display:grid;gap:16px}
+  .compose{background:#EDF1F2;border:0;box-shadow:none;border-radius:var(--radius);padding:16px}
+  .compose-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+  .compose-hint{font-size:11.5px;font-weight:800;color:#8A94A0}
+
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;border:2px solid transparent;background:#fff;border-radius:999px;padding:9px 14px;font-size:13.5px;font-weight:800;color:#3B444F;cursor:pointer;white-space:nowrap;transition:border-color .15s,background .15s}
+  .chip .em{font-size:15px;line-height:1}
+  .chip.on{border-color:var(--brand);background:var(--brand-soft);color:#0E7A56}
+
+  .compose textarea{width:100%;min-height:104px;border:0;border-radius:16px;padding:14px 15px;font:inherit;font-size:15px;line-height:1.6;resize:vertical;background:#fff;color:var(--ink)}
+  .compose textarea::placeholder{color:#A5AFB9}
+  .compose textarea:focus{outline:2px solid #B7EBD6;outline-offset:0}
+  .send-row{display:flex;gap:8px;margin-top:10px}
+  .btn{border:0;border-radius:14px;padding:14px 16px;font-weight:800;font-size:14.5px;cursor:pointer;transition:transform .06s,background .15s}
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{flex:1;background:#1B2430;color:#fff}
+  .btn.primary:hover{background:#000}
+  .btn.line{background:#fff;border:1px solid #DDE3E7;color:#3B444F}
+  .btn.danger{background:#FDECEC;color:#C0392B}
+  .btn.block{display:block;width:100%}
+
+  /* ---------- timeline ---------- */
+  .tl-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 2px 10px}
+  .tl-title{font-size:15px;font-weight:800}
+  .tl-title .count{display:inline-block;min-width:22px;text-align:center;background:#fff;border:1px solid var(--line);border-radius:999px;font-size:11.5px;padding:1px 7px;margin-left:4px;color:var(--sub);vertical-align:2px}
+  .tl-status{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--sub);text-align:right}
+  .dot{width:7px;height:7px;border-radius:50%;background:#B9C3CB;flex:0 0 auto}
+  .dot.on{background:var(--brand);box-shadow:0 0 0 3px rgba(22,169,123,.16)}
+  .timeline{display:flex;flex-direction:column;gap:18px}
+  .day{display:flex;align-items:center;gap:10px;margin:4px 0 2px;color:#9AA4AF;font-size:11.5px;font-weight:800}
+  .day::before,.day::after{content:"";height:1px;background:var(--line);flex:1}
+
+  .msg{display:flex;gap:10px;align-items:flex-start}
+  .msg .av{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;font-size:19px;flex:0 0 auto;box-shadow:0 1px 2px rgba(16,24,40,.06)}
+  .msg-main{flex:1;min-width:0}
+  .msg-head{display:flex;align-items:center;gap:6px;margin:0 0 5px;flex-wrap:wrap}
+  .msg-head .name{font-weight:800;font-size:13.5px}
+  .msg-head .badge{font-size:10.5px;font-weight:800;color:#8A94A0;background:#EFF3F5;border-radius:6px;padding:2px 6px}
+  .msg-head .time{font-size:11px;color:#9AA4AF;font-weight:600}
+  .bubble{background:#fff;border:1px solid rgba(230,235,238,.9);border-radius:5px 17px 17px 17px;padding:12px 14px;font-size:14.5px;line-height:1.65;word-break:break-word;box-shadow:0 1px 2px rgba(16,24,40,.045)}
+  .msg.mine .bubble{background:#1B2430;color:#F3F6F8;border-color:#1B2430}
+  .msg.mine .bubble .mention{background:#2C3B4B !important;color:#7FE3BC !important}
+  .msg.done .bubble{opacity:.66}
+  .msg-foot{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap}
+  .tag{font-size:11px;font-weight:800;color:#8A94A0;background:#fff;border:1px solid var(--line);border-radius:999px;padding:3px 9px}
+  .check{border:1px solid var(--line);background:#fff;border-radius:999px;font-size:11.5px;font-weight:800;color:#6B7684;padding:4px 10px;cursor:pointer}
+  .check.on{background:var(--brand-soft);border-color:#B7EBD6;color:#0E7A56}
+  .mention{display:inline-block;border-radius:6px;padding:0 4px;font-weight:800}
+
+  /* ---------- typing ---------- */
+  .typing{display:flex;gap:10px;align-items:flex-start}
+  .typing .av{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;font-size:19px;flex:0 0 auto}
+  .typing-bubble{display:inline-flex;align-items:center;gap:9px;background:#fff;border:1px dashed #D7DEE3;border-radius:5px 17px 17px 17px;padding:11px 14px;font-size:13px;font-weight:700;color:#6B7684}
+  .tdots{display:inline-flex;gap:3px}
+  .tdots i{width:6px;height:6px;border-radius:50%;background:#B9C3CB;animation:blink 1.1s infinite}
+  .tdots i:nth-child(2){animation-delay:.18s}
+  .tdots i:nth-child(3){animation-delay:.36s}
+  @keyframes blink{0%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-2px)}}
+
+  .empty{background:#fff;border:1px dashed #D7DEE3;border-radius:18px;padding:26px 18px;text-align:center}
+  .empty .big{font-size:30px}
+  .empty h3{margin:8px 0 4px;font-size:15px}
+  .empty p{margin:0 0 14px;font-size:13px;color:var(--sub)}
+  .samples{display:flex;flex-direction:column;gap:8px;max-width:420px;margin:0 auto}
+  .sample{border:1px solid var(--line);background:#F9FBFB;border-radius:12px;padding:10px 12px;font-size:13px;color:#3B444F;text-align:left;cursor:pointer}
+  .sample:hover{background:#F1F6F4;border-color:#CFE7DC}
+
+  /* ---------- members ---------- */
+  .sec-head{margin:2px 2px 12px}
+  .sec-head h2{margin:0 0 4px;font-size:19px;letter-spacing:-.02em}
+  .sec-head p{margin:0;font-size:13px;color:var(--sub)}
+  .members{display:grid;gap:14px;margin-top:14px}
+  @media(min-width:820px){.members{grid-template-columns:1fr 1fr}}
+  .member{background:#fff;border-radius:20px;padding:16px;box-shadow:var(--shadow);border:1px solid rgba(230,235,238,.85);border-top:4px solid var(--c);display:flex;flex-direction:column}
+  .member-top{display:flex;align-items:center;gap:11px}
+  .member-top .av{width:44px;height:44px;border-radius:15px;display:grid;place-items:center;font-size:22px;background:var(--cs)}
+  .member-top h3{margin:0;font-size:16px}
+  .member-top .role{margin:1px 0 0;font-size:12.5px;font-weight:800;color:var(--c)}
+  .member-desc{margin:11px 0 14px;font-size:13px;line-height:1.6;color:#4C5663}
+  .member-foot{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .member-foot .who{font-size:11.5px;font-weight:700;color:#8A94A0}
+  .btn.talk{background:var(--c);color:#fff;border-radius:12px;padding:10px 16px;font-size:13.5px;font-weight:800}
+  .btn.talk:hover{filter:brightness(.94)}
+
+  /* ---------- settings ---------- */
+  .row{display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap}
+  .mode-badge{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:7px 13px;font-size:13px;font-weight:800;background:var(--brand-soft);color:#0E7A56}
+  .mode-badge .dot{background:var(--brand);box-shadow:0 0 0 3px rgba(22,169,123,.16)}
+  .kv{display:grid;grid-template-columns:80px 1fr;gap:6px 10px;margin-top:12px;font-size:12.5px}
+  .kv dt{color:#8A94A0;font-weight:800}
+  .kv dd{margin:0;color:#3B444F;word-break:break-all}
+  .btn-row{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+
+  /* ---------- toast ---------- */
+  #toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);background:#1B2430;color:#fff;font-size:13px;font-weight:700;padding:11px 16px;border-radius:999px;box-shadow:0 8px 24px rgba(16,24,40,.22);opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:80;max-width:86vw;text-align:center}
+  #toast.on{opacity:1;transform:translate(-50%,0)}
+
+  @media(min-width:900px){
+    .chat-grid{grid-template-columns:372px minmax(0,1fr);align-items:start}
+    .compose-col{position:sticky;top:78px}
+    .app{padding-top:28px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="hero">
+    <span class="eyebrow">지훈 님의 AI 협업 방</span>
+    <h1>AI들이<br>일을 이어 가고 있어요</h1>
+    <div class="hero-sub">
+      <div class="avatar-stack" id="hero-avatars"></div>
+      <span class="label"><b>AI 5개</b>가 함께해요</span>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab on" id="tab-chat" data-act="tab" data-tab="chat" role="tab">대화·결정</button>
+    <button class="tab" id="tab-members" data-act="tab" data-tab="members" role="tab">멤버·AI</button>
+    <button class="tab" id="tab-settings" data-act="tab" data-tab="settings" role="tab">설정</button>
+  </nav>
+
+  <!-- ============ 대화·결정 ============ -->
+  <section class="panel on" id="panel-chat">
+    <div class="chat-grid">
+
+      <div class="compose-col">
+        <section class="compose">
+          <div class="compose-head">
+            <h2 class="card-title">AI에게 시킬 일</h2>
+            <span class="compose-hint">답장은 자동으로 와요</span>
+          </div>
+
+          <div class="chips" id="target-chips"></div>
+
+          <label class="sr-only" for="msg-input">시키고 싶은 일</label>
+          <textarea id="msg-input" rows="3" placeholder="예: 내일 청주 날씨를 알아보고 결과를 남겨줘"></textarea>
+
+          <div class="send-row">
+            <button class="btn primary" id="btn-send" data-act="send">지시 남기기</button>
+          </div>
+          <p class="tiny">고른 AI가 먼저 답하고, 필요하면 다른 AI가 이어받아요. 이름을 콕 부르고 싶으면 <b>@피클</b>처럼 적어도 돼요.</p>
+        </section>
+      </div>
+
+      <div class="timeline-col">
+        <div class="tl-head">
+          <div class="tl-title">대화 <span class="count" id="msg-count">0</span></div>
+          <div class="tl-status"><span class="dot on" id="status-dot"></span><span id="status-text">5종 AI 자동 응답</span></div>
+        </div>
+        <div class="timeline" id="timeline"></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ 멤버·AI ============ -->
+  <section class="panel" id="panel-members">
+    <div class="sec-head">
+      <h2>방에 있는 AI 5개</h2>
+      <p>각자 잘하는 일이 달라요. 말을 걸고 싶은 AI를 골라 보세요.</p>
+    </div>
+    <div class="members" id="members"></div>
+  </section>
+
+  <!-- ============ 설정 ============ -->
+  <section class="panel" id="panel-settings">
+    <div class="sec-head">
+      <h2>설정</h2>
+      <p>대화는 이 브라우저에 자동으로 저장돼요.</p>
+    </div>
+
+    <section class="card" style="margin-top:14px">
+      <div class="row">
+        <h2 class="card-title">저장 상태</h2>
+        <span class="mode-badge" id="store-badge"><span class="dot"></span><span id="store-state">로컬 자동 저장 중</span></span>
+      </div>
+      <p class="tiny" id="store-detail" style="font-size:12.5px">새로고침해도 대화가 그대로 남아요.</p>
+      <dl class="kv">
+        <dt>저장 위치</dt><dd>이 브라우저의 localStorage</dd>
+        <dt>대화 수</dt><dd id="store-count">0개</dd>
+      </dl>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">대화 내역</h2>
+      <p class="tiny" style="font-size:12.5px">JSON으로 내려받아 두면 나중에 다시 볼 수 있어요. 초기화하면 되돌릴 수 없어요.</p>
+      <div class="btn-row">
+        <button class="btn line" data-act="export">대화 내역 JSON 내보내기</button>
+        <button class="btn danger" data-act="reset">대화 초기화</button>
+      </div>
+    </section>
+  </section>
+
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ===============================================================
+     1. AI 명단
+     =============================================================== */
+  var AI = {
+    pickle:  { key:"pickle",  name:"피클", emoji:"🥒", role:"실행 · 전화 · 예약", badge:"실행", color:"#12996C", soft:"#E7F8F0" },
+    keyring: { key:"keyring", name:"키링", emoji:"🔑", role:"일정 · 정리",     badge:"일정", color:"#C9820F", soft:"#FFF4E1" },
+    cue:     { key:"cue",     name:"Cue",  emoji:"🎧", role:"자료조사 · 분석",  badge:"조사", color:"#4A76DF", soft:"#ECF1FE" },
+    muse:    { key:"muse",    name:"뮤즈", emoji:"✨", role:"쇼핑 · 장기계획",  badge:"계획", color:"#9152DE", soft:"#F3ECFE" },
+    buoy:    { key:"buoy",    name:"부이", emoji:"🌐", role:"비교 · 취향추천",  badge:"비교", color:"#0E9DAD", soft:"#E4F8FB" }
+  };
+  var ME = { key:"jihun", name:"지훈", emoji:"🧑‍🔧", badge:"나", color:"#3B4453", soft:"#EEF1F6" };
+  var ORDER = ["pickle", "keyring", "cue", "muse", "buoy"];
+  var TARGETS = [{ key:"all", name:"모두에게", emoji:"📣" }];
+  ORDER.forEach(function (k) { TARGETS.push({ key:k, name:AI[k].name, emoji:AI[k].emoji }); });
+
+  var DESC = {
+    pickle:  "전화·예약·실행까지 직접 하는 역할이에요. 날씨 확인, 예약 문의, 결제 전 확인처럼 ‘실제로 해야 하는 일’을 맡아요.",
+    keyring: "일정과 할 일을 모아 정리해요. 시간표로 만들어 주고, 빠진 약속이나 마감을 알려 줘요.",
+    cue:     "자료를 찾아 읽고 비교·분석해요. 여러 곳의 내용을 표로 정리하고 근거를 붙여 주는 데 강해요.",
+    muse:    "사고 싶은 것과 오래 걸리는 계획을 맡아요. 예산 안에서 무엇을 언제 살지, 준비물은 무엇인지 짜 줘요.",
+    buoy:    "취향에 맞는 후보를 비교해서 골라 줘요. 가격·성능·평점을 나란히 놓고 추천해요."
+  };
+
+  /* ===============================================================
+     2. 저장소 · 상태
+     =============================================================== */
+  var STORE = "aicr.messages.v1";
+  var REPLY_MIN = 600, REPLY_MAX = 2200;
+
+  var state = {
+    tab: "chat",
+    target: "all",
+    messages: [],
+    typing: null,          // 지금 답장 쓰는 AI key
+    queue: [],             // 대기 중인 답장
+    timer: null,
+    savedAt: 0
+  };
+
+  function lsGet(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { window.localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+  function lsDel(k) { try { window.localStorage.removeItem(k); } catch (e) {} }
+
+  function newId() {
+    return "m-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7);
+  }
+
+  function norm(m) {
+    var raw = m || {};
+    var author = AI[raw.author] ? raw.author : "jihun";
+    return {
+      id: raw.id ? String(raw.id) : newId(),
+      author: author,
+      body: String(raw.body === null || raw.body === undefined ? "" : raw.body),
+      kind: raw.kind === "reply" ? "reply" : "task",
+      target: isTarget(raw.target) ? raw.target : "all",
+      done: !!raw.done,
+      ts: Number(raw.ts) || Date.now()
+    };
+  }
+
+  function isTarget(key) {
+    for (var i = 0; i < TARGETS.length; i++) if (TARGETS[i].key === key) return true;
+    return false;
+  }
+
+  function loadMessages() {
+    var raw = lsGet(STORE);
+    if (!raw) return [];
+    try {
+      var data = JSON.parse(raw);
+      var list = null;
+      if (Array.isArray(data)) list = data;
+      else if (data && Array.isArray(data.messages)) list = data.messages;
+      if (!list) return [];
+      return list.map(norm).filter(function (m) { return m.body; });
+    } catch (e) { return []; }
+  }
+
+  function saveMessages() {
+    state.savedAt = Date.now();
+    return lsSet(STORE, JSON.stringify({
+      app: "ai-collab-room",
+      version: 2,
+      saved_at: new Date(state.savedAt).toISOString(),
+      messages: state.messages
+    }));
+  }
+
+  /* ===============================================================
+     3. 도우미
+     =============================================================== */
+  function $(id) { return document.getElementById(id); }
+
+  function esc(s) {
+    return String(s === null || s === undefined ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
+  var MENTION_RE = /@(피클|키링|Cue|큐|뮤즈|부이|전체|모두|지훈)/gi;
+
+  var ALIAS = {
+    "피클":"pickle", "키링":"keyring", "cue":"cue", "큐":"cue",
+    "뮤즈":"muse", "부이":"buoy", "전체":"all", "모두":"all", "지훈":"jihun"
+  };
+  function aliasKey(word) {
+    if (!word) return null;
+    var w = String(word).trim();
+    var low = w.toLowerCase();
+    return ALIAS[w] || ALIAS[low] || null;
+  }
+
+  function mentionKeys(body) {
+    var found = [], m;
+    MENTION_RE.lastIndex = 0;
+    while ((m = MENTION_RE.exec(String(body))) !== null) {
+      var k = aliasKey(m[1]);
+      if (k && found.indexOf(k) === -1) found.push(k);
+    }
+    return found;
+  }
+
+  function fmtBody(text) {
+    var safe = esc(text);
+    var out = "", last = 0, m;
+    MENTION_RE.lastIndex = 0;
+    while ((m = MENTION_RE.exec(safe)) !== null) {
+      out += safe.slice(last, m.index);
+      var key = aliasKey(m[1]);
+      var a = key ? (AI[key] || (key === "jihun" ? ME : null)) : null;
+      var color = a ? a.color : "#0E7A56";
+      var bg = a ? a.soft : "#E7F8F0";
+      out += '<span class="mention" style="color:' + color + ";background:" + bg + '">' + m[0] + "</span>";
+      last = m.index + m[0].length;
+    }
+    out += safe.slice(last);
+    return out.replace(/\n/g, "<br>");
+  }
+
+  function fmtTime(ts) {
+    var d = new Date(ts);
+    var h = d.getHours();
+    var ap = h < 12 ? "오전" : "오후";
+    var h12 = h % 12;
+    if (h12 === 0) h12 = 12;
+    var mm = d.getMinutes();
+    return ap + " " + h12 + ":" + (mm < 10 ? "0" + mm : "" + mm);
+  }
+
+  function sameDay(a, b) {
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  }
+
+  function dayLabel(ts) {
+    var d = new Date(ts), now = new Date();
+    if (sameDay(d, now)) return "오늘";
+    if (sameDay(d, new Date(now.getTime() - 86400000))) return "어제";
+    return (d.getMonth() + 1) + "월 " + d.getDate() + "일";
+  }
+
+  function stamp() {
+    var d = new Date();
+    function p(n) { return (n < 10 ? "0" : "") + n; }
+    return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + "-" + p(d.getHours()) + p(d.getMinutes());
+  }
+
+  var toastTimer = null;
+  function toast(msg) {
+    var el = $("toast");
+    if (!el) return;
+    el.textContent = msg;
+    el.className = "on";
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.className = ""; }, 2400);
+  }
+
+  function targetLabel(key) {
+    for (var i = 0; i < TARGETS.length; i++) if (TARGETS[i].key === key) return TARGETS[i].name;
+    return "모두에게";
+  }
+
+  function agentOf(key) { return AI[key] || ME; }
+
+  function pickVary(bucket, arr) {
+    var counts = pickVary.counts;
+    if (!(bucket in counts)) counts[bucket] = Math.floor(Math.random() * arr.length);
+    var v = arr[counts[bucket] % arr.length];
+    counts[bucket] = counts[bucket] + 1;
+    return v;
+  }
+  pickVary.counts = {};
+
+  /* ===============================================================
+     4. 주제 알아보기
+     =============================================================== */
+  var TOPICS = [
+    { key:"weather",  weight:6, words:["날씨","비","눈","우산","기온","더워","더위","추워","추위","맑","흐림","폭설","장마","미세먼지","대기","바람","태풍","한파","소나기","예보"] },
+    { key:"schedule", weight:5, words:["일정","시간","캘린더","예약","약속","언제","몇시","몇 시","시간표","알림","마감","스케줄","달력","계획표","주말"] },
+    { key:"shopping", weight:4, words:["선물","쇼핑","가격","예산","사고 싶","사고싶","사야","살까","할인","쿠팡","얼마","구매","신발","옷","가방","생일","저렴","비싼","최저가","결제","주문"] },
+    { key:"media",    weight:3, words:["영화","맛집","극장","예매","식당","카페","메뉴","드라마","유튜브","노래","콘서트","전시","뮤지컬","추천","비교","볼만한","먹을"] },
+    { key:"build",    weight:2, words:["로봇","코딩","코드","code","nova","노바","ai","인공지능","공부","시험","아두이노","라즈베리","서보","회로","파이썬","자바","숙제","영어","수학","배터리","센서","펌웨어","컴파일","에러","버그","만들"] },
+    { key:"greet",    weight:1, words:["안녕","하이","반가","테스트","시작","회의","모여","다들","뭐해","심심","고마워","수고","ㅋㅋ","ㅎㅎ","출발"] }
+  ];
+
+  function detectTopic(text) {
+    var s = String(text || "").toLowerCase();
+    var best = "general", bestScore = 0;
+    for (var i = 0; i < TOPICS.length; i++) {
+      var t = TOPICS[i], hits = 0;
+      for (var j = 0; j < t.words.length; j++) {
+        if (s.indexOf(t.words[j]) !== -1) hits++;
+      }
+      if (!hits) continue;
+      var score = hits * 10 + t.weight;
+      if (score > bestScore) { bestScore = score; best = t.key; }
+    }
+    return best;
+  }
+
+  /* ===============================================================
+     5. 답장 문장 (주제 × AI)
+     =============================================================== */
+  var LINES = {
+    weather: {
+      pickle: [
+        "오늘·내일 날씨는 제가 바로 확인해서 알려 드릴게요. 비 소식만 콕 집어서, 우산 챙길 시간까지 같이 정리해 드릴게요. ☔",
+        "@지훈 외출 전에 한 번만 불러 주세요. 지금 하늘, 몇 시에 비, 내일 아침 기온 — 세 가지로 나눠서 드릴게요.",
+        "확인 순서는 이렇게 갈게요. ① 지금 기온 ② 오후 강수 ③ 바람. 나갈 시간을 정해 주시면 그 시간만 정확히 보겠습니다."
+      ],
+      keyring: [
+        "외출 시간 정해지면 캘린더에 ‘우산 챙기기’ 한 줄 넣어 둘게요. 몇 시에 나가요?",
+        "비 오는 날은 이동 시간이 10분쯤 더 걸려요. 약속이 있으면 10분 일찍 출발하는 걸로 잡아 둘게요.",
+        "이번 주 외출 일정 정리해 봤어요 — 수요일은 실내, 금요일은 비 가능성. 그날만 알림 걸어 둘게요."
+      ],
+      cue: [
+        "날씨는 출처마다 조금씩 달라요. 두 곳을 나란히 놓고 ‘비 올 확률’만 비교해 드리는 쪽이 정확해요.",
+        "예보를 숫자로 보면요 — 강수확률 60%는 ‘같은 조건 열 번 중 여섯 번’이라는 뜻이에요. 우산은 챙기는 쪽이 이득이에요.",
+        "기온만 보지 말고 체감온도와 바람을 같이 봐야 해요. 셋을 함께 보면 옷 고르기가 훨씬 쉬워져요."
+      ],
+      muse: [
+        "비 오는 날엔 실내 코스가 좋아요. 도서관이나 카페 쪽으로 후보를 두 개만 골라 둘까요?",
+        "날씨 좋은 날에 ‘하고 싶던 일’을 미리 정해 두면 좋아요. 이번 주 토요일은 어때요?",
+        "우산보다 얇은 바람막이가 더 편한 계절이에요. 가방에 쏙 들어가는 걸로 골라 드릴까요?"
+      ],
+      buoy: [
+        "우산은 편의점 3,000원짜리랑 접이식 9,000원짜리만 비교해도 충분해요. 가방에 넣고 다닐 거면 접이식이 나아요.",
+        "비 올 확률 50%면 우산 챙기는 쪽이 이득이에요. 젖었을 때 손해가 훨씬 크니까요.",
+        "셋을 비교해 봤어요 — 가벼움, 튼튼함, 가격. 지훈 님은 가벼운 쪽을 더 좋아할 것 같아요."
+      ]
+    },
+
+    schedule: {
+      pickle: [
+        "일정 중에 전화·예약이 필요한 건 제가 맡을게요. 어디에 몇 시로 잡을지만 알려 주세요.",
+        "오늘 할 일 세 개만 골라 주세요. 나머지는 제가 뒤로 미뤄 두고 하나씩 처리하겠습니다.",
+        "예약은 제가 바로 확인해 볼게요. 날짜 두 개만 후보로 주시면 되는 쪽으로 잡아 드려요."
+      ],
+      keyring: [
+        "일정 시간표로 정리해 둘게요. ① 오늘 남은 일 ② 이번 주 약속 ③ 마감 있는 것 — 세 덩어리로 나눠서요.",
+        "지금 잡혀 있는 건 화요일 수업, 목요일 약속이에요. 목요일은 30분 일찍 끝나니 그 시간에 정리 시간을 넣을게요.",
+        "비어 있는 시간은 오후 4시부터 6시예요. 그 사이에 숙제를 넣고 저녁은 비워 둘게요."
+      ],
+      cue: [
+        "지난번 일정과 겹치는지 먼저 확인해 볼게요. 겹치면 후보 두 개로 다시 짜 드려요.",
+        "일정이 자꾸 밀리는 건 시간이 없어서가 아니라 순서가 섞여서예요. 어려운 일을 먼저 놓는 게 좋아요.",
+        "지난 두 주 기록을 보면 오전에 집중이 잘 됐어요. 어려운 일은 오전으로 옮기는 걸 추천해요."
+      ],
+      muse: [
+        "이번 주는 꽉 채우지 말고 하루는 비워 두세요. 숨 쉴 틈이 있어야 다음 주가 편해요.",
+        "일정은 ‘해야 하는 일’보다 ‘하고 싶은 일’을 먼저 넣으면 지키기 쉬워요.",
+        "장기 계획이면 이번 달 목표 하나만 정해요. 여러 개를 한꺼번에 잡으면 아무것도 안 남아요."
+      ],
+      buoy: [
+        "오전과 오후를 비교해 볼게요. 집중이 잘 되는 시간에 어려운 일을 넣는 쪽이 효율이 좋아요.",
+        "30분씩 여섯 번이 3시간 한 번보다 더 많이 남아요. 잘게 나눠서 넣을까요?",
+        "두 가지 안을 놓고 보면요 — 빡빡한 안은 성취가 크고, 여유 있는 안은 오래 갑니다. 어느 쪽이 좋아요?"
+      ]
+    },
+
+    media: {
+      pickle: [
+        "예매는 제가 바로 할 수 있어요. 날짜와 인원만 정해 주시면 좌석 좋은 자리부터 잡아 볼게요.",
+        "보고 싶은 작품 두 개만 말해 주세요. 상영 시간이 겹치지 않는 쪽으로 제가 확인해서 알려 드릴게요.",
+        "맛집은 전화로 자리 있는지 먼저 확인해 볼게요. 몇 시쯤 갈까요?"
+      ],
+      keyring: [
+        "보는 날짜 정해지면 캘린더에 넣고, 시작 두 시간 전에 알림 걸어 둘게요.",
+        "끝나는 시간 알려 주시면 집에 오는 시간까지 계산해서 일정에 넣어 둘게요.",
+        "이번 주말은 토요일 오후가 비어 있어요. 그때로 잡으면 여유로워요."
+      ],
+      cue: [
+        "영화는 상영 시간표부터 확인하는 게 순서예요. 두 개만 정해 주시면 시간·좌석·가격을 표로 비교해 드릴게요.",
+        "리뷰를 30개쯤 훑어보면 거의 똑같은 말이 반복돼요. 그 말만 보면 실제 만족도가 보여요.",
+        "맛집은 최근 석 달 리뷰만 보세요. 오래된 리뷰는 주인이 바뀌면 의미가 없어요."
+      ],
+      muse: [
+        "분위기 좋은 쪽으로 고르고 싶다면 저한테 맡겨 주세요. 팝콘까지 생각한 코스로 짜 드릴게요. 🍿",
+        "영화는 하루에 두 편보다 한 편이 오래 기억에 남아요. 하나만 제대로 골라요.",
+        "비 오는 날엔 낮 시간대가 한산해요. 조용히 보고 싶으면 그때가 좋아요."
+      ],
+      buoy: [
+        "두 후보를 나란히 놓고 볼게요 — 러닝타임, 평점, 상영관 거리. 셋 중에 뭐가 제일 중요해요?",
+        "A는 평점이 높고 B는 자리가 좋아요. 같이 보는 사람이 있으면 자리 좋은 쪽을 추천해요.",
+        "메뉴는 인기 세 개만 비교하면 돼요. 처음 가는 집이면 그게 제일 안전해요."
+      ]
+    },
+
+    shopping: {
+      pickle: [
+        "구매는 제가 대신 눌러 드릴 수 있어요. 다만 결제 전에 금액은 꼭 확인받고 진행할게요.",
+        "재고 확인하고 바로 알려 드릴게요. 품절이면 다른 판매처도 찾아볼게요.",
+        "선물이면 포장 옵션도 같이 볼게요. 메시지 카드를 넣을 수 있는지 확인해 볼게요."
+      ],
+      keyring: [
+        "살 것 목록을 메모로 정리해 둘게요. 오늘 살 것과 나중에 살 것을 나눠 두면 지갑이 편해요.",
+        "생일이 다가오면 2주 전에 미리 사 두는 게 좋아요. 늦게 사면 배송이 몰려요.",
+        "이번 달 쓴 돈을 정리해 봤어요. 다음 달 예산은 조금 여유 있게 잡아 둘게요."
+      ],
+      cue: [
+        "리뷰에서 ‘배송’과 ‘내구성’ 이야기만 따로 모아 봤어요. 별점 평균보다 이 두 개가 더 정확해요.",
+        "최저가만 쫓으면 정품이 아닐 수 있어요. 판매자 평점과 반품률을 같이 보세요.",
+        "가격이 오르내리는 물건이면 지난 한 달 흐름을 볼 수 있어요. 지금이 평균보다 낮은지 확인해 드릴게요."
+      ],
+      muse: [
+        "예산부터 정하고 후보를 셋으로 줄여 볼게요. 비싼 것 하나, 무난한 것 하나, 가성비 하나 — 이렇게 놓으면 고르기 쉬워요.",
+        "선물은 ‘쓸 때마다 기억나는 것’이 좋아요. 매일 쓰는 물건이면 오래 남아요.",
+        "갖고 싶은 걸 세 문장으로 적어 보세요. 무엇에 쓰고, 얼마나 자주 쓰고, 언제까지 필요한지요."
+      ],
+      buoy: [
+        "가격만 보면 A, 평점 보면 B예요. 반품이 쉬운 쪽을 고르면 실패가 적어요.",
+        "같은 물건인데 배송이 3일이냐 2주냐 차이가 커요. 급하면 조금 비싸도 빠른 쪽이 나아요.",
+        "셋을 비교하면요 — 8,000원 / 12,000원 / 19,000원. 가운데 가격이 만족도가 가장 높았어요."
+      ]
+    },
+
+    build: {
+      pickle: [
+        "NOVA MAX 쪽은 제가 실행 순서를 잡을게요. ① 전원 확인 ② 서보 테스트 ③ 코드 업로드 — 이 순서면 막히는 곳을 빨리 찾아요.",
+        "코드를 고칠 때는 한 번에 하나만 바꿔요. 그래야 문제가 생겼을 때 원인을 바로 알 수 있어요.",
+        "부품이 오면 바로 조립 들어갈 수 있게 준비해 둘게요. 필요한 공구도 같이 챙겨 드려요."
+      ],
+      keyring: [
+        "작업 시간을 30분 단위로 끊어서 넣어 둘게요. 한 번에 3시간보다 30분 여섯 번이 더 많이 남아요.",
+        "시험 기간엔 만들기 시간을 줄이고, 대신 주말에 몰아서 넣는 게 좋아요.",
+        "오늘 숙제부터 끝내고 남는 시간에 만드는 걸로 순서를 잡아 둘게요."
+      ],
+      cue: [
+        "코드 문제는 에러 메시지 첫 줄이 답인 경우가 많아요. 그 줄과 방금 바꾼 부분만 같이 보면 대부분 잡혀요.",
+        "센서 값이 튀면 전원이 흔들리는 경우가 많아요. 배터리와 접지를 먼저 확인해 보세요.",
+        "모터가 안 돌 때는 ① 전원 ② 신호 ③ 기구 — 이 셋으로 나눠서 하나씩 지우면 돼요."
+      ],
+      muse: [
+        "만들고 싶은 걸 먼저 세 문장으로 적어 보세요. 무엇을 하고, 누구를 돕고, 언제까지 — 그게 계획의 뼈대예요.",
+        "큰 로봇을 한 번에 만들려고 하면 지치기 쉬워요. 이번 주는 ‘움직이는 손’까지만 목표로 해요.",
+        "공부도 만들기랑 같아요. 오늘 배운 걸 바로 만들어 보면 훨씬 오래 남아요."
+      ],
+      buoy: [
+        "부품은 ‘싼 것 / 정확한 것 / 빨리 오는 것’ 중 하나를 골라야 해요. 셋 중에 뭐가 급해요?",
+        "모터 두 개를 비교하면요 — 힘은 A, 정밀도는 B예요. 손으로 잡는 로봇이면 정밀도 쪽을 추천해요.",
+        "개발 보드는 익숙한 걸 계속 쓰는 게 좋아요. 바꾸면 배울 게 두 배가 돼요."
+      ]
+    },
+
+    greet: {
+      pickle:  ["네, 저 여기 있어요 🥒 시키시면 바로 움직일게요.", "준비됐어요. 오늘 뭐부터 할까요?", "불러 주셔서 좋아요. 실행이 필요한 건 다 제가 맡아요."],
+      keyring: ["자리 잡았어요. 오늘 할 일부터 정리해 둘게요.", "안녕하세요. 일정 관리는 맡겨 주세요.", "여기 있어요. 시간표부터 짜 드릴까요?"],
+      cue:     ["들어왔어요. 궁금한 건 자료로 확인해 드릴게요.", "안녕하세요. 숫자로 답하는 게 편해요.", "준비됐어요. 궁금한 게 있으면 바로 찾아볼게요."],
+      muse:    ["안녕하세요 ✨ 오늘은 뭘 만들어 볼까요?", "왔어요. 조금 더 재미있는 쪽으로 가 볼까요?", "안녕하세요. 계획 세우는 건 저한테 맡겨 주세요."],
+      buoy:    ["준비됐어요. 고민되는 건 나란히 놓고 같이 볼게요.", "안녕하세요. 뭐 고를 게 있으면 불러 주세요.", "여기 있어요. 비교가 필요하면 언제든요."]
+    },
+
+    general: {
+      pickle: [
+        "@지훈 그 건은 제가 확인해서 바로 알려 드릴게요. 조금만 기다려 주세요.",
+        "실행이 필요한 부분은 제가 맡을게요. 어디까지 해도 되는지만 정해 주세요.",
+        "확인해 보고 결정된 대로 처리할게요. 결과는 여기 남겨 둘게요."
+      ],
+      keyring: [
+        "그 건은 일정에 넣어 둘게요. 언제까지 하면 좋을까요?",
+        "정리해서 한눈에 보이게 만들어 둘게요.",
+        "할 일 목록에 추가해 뒀어요. 오늘 할 것과 이번 주 할 것으로 나눴습니다."
+      ],
+      cue: [
+        "그 주제로 자료를 찾아 보면 좋은 비교가 나올 것 같아요. 정리해서 표로 드릴게요.",
+        "먼저 확인해야 할 게 있어요. 출처가 어디인지 알아야 정확해요.",
+        "제가 아는 범위에서는 이렇게 정리돼요 — ① 지금 상황 ② 고를 수 있는 것 ③ 손해 보지 않는 쪽."
+      ],
+      muse: [
+        "그건 조금 더 크게 생각해 볼까요? 석 달 뒤에 어떻게 되면 좋을지부터 정해 봐요.",
+        "서두르지 않아도 돼요. 순서만 잘 잡으면 돼요.",
+        "하고 싶은 쪽으로 조금 더 밀어 봐도 좋아요. 준비물은 제가 정리할게요."
+      ],
+      buoy: [
+        "고르는 문제라면 나란히 놓고 볼게요. 뭐가 제일 중요해요 — 가격, 시간, 아니면 재미?",
+        "두 가지 방법이 있어요. 하나는 빠르게, 하나는 확실하게. 어느 쪽이 좋아요?",
+        "취향이면 지난번에 고른 것부터 보면 답이 보여요."
+      ]
+    }
+  };
+
+  var FOLLOW = {
+    weather: {
+      pickle:  ["밖에 나갈 시간만 알려 주세요. 그 시간 기준으로 확인해 드릴게요.", "@지훈 우산 알림도 제가 걸어 둘게요."],
+      keyring: ["{P} 말대로면 나가는 시간에 우산 알림을 걸어 두면 되겠네요. 몇 시에 나가요?", "그날 이동 시간은 10분 더 잡아 둘게요."],
+      cue:     ["강수확률은 두 곳을 같이 보는 게 안전해요. 한 곳만 보면 반은 틀려요.", "체감온도까지 같이 보면 옷 고르기가 쉬워져요."],
+      muse:    ["비 오는 날 실내 코스도 하나 골라 둘게요.", "날씨 좋은 날에 할 일도 미리 정해 둬요. 그게 제일 재미있어요."],
+      buoy:    ["우산은 접이식 하나면 일 년 내내 써요.", "가벼운 걸 고르면 가방에 넣고 다니기 편해요."]
+    },
+    schedule: {
+      pickle:  ["예약이나 전화가 필요하면 저한테 넘겨 주세요.", "@지훈 확정되는 대로 바로 잡아 둘게요."],
+      keyring: ["{P} 말대로 정리해서 캘린더에 넣어 두고, 두 시간 전에 알려 드릴게요.", "비어 있는 시간은 오후 4시부터예요. 그때 넣을까요?"],
+      cue:     ["지난 일정과 겹치는지 제가 확인해 볼게요.", "오전으로 옮기면 집중이 더 잘 될 거예요."],
+      muse:    ["하루는 비워 두는 게 좋아요. 그날은 아무것도 안 넣어요.", "하고 싶은 일부터 넣으면 일정이 덜 무거워져요."],
+      buoy:    ["30분씩 나눠서 넣는 쪽을 추천해요.", "빡빡한 안과 여유 있는 안, 어느 쪽이 좋아요?"]
+    },
+    media: {
+      pickle:  ["예매는 날짜와 인원만 주시면 제가 바로 잡아 둘게요.", "몇 시에 볼지만 알려 주세요. 자리 좋은 곳부터 볼게요."],
+      keyring: ["보는 날 정해지면 알림 걸어 둘게요.", "끝나는 시간 알려 주시면 집에 오는 시간까지 계산할게요."],
+      cue:     ["{P} 말이 맞아요. 리뷰는 최근 것만 보는 게 정확해요.", "두 후보를 표로 정리해 드릴까요? 한눈에 보여요."],
+      muse:    ["팝콘까지 생각한 코스로 짜 드릴게요. 🍿", "한 편만 제대로 골라요. 그게 오래 남아요."],
+      buoy:    ["자리 좋은 쪽으로 고르면 만족도가 높아요.", "인기 메뉴 세 개만 비교해도 충분해요."]
+    },
+    shopping: {
+      pickle:  ["결제 전에 금액은 꼭 확인받고 진행할게요.", "재고 확인해서 바로 알려 드릴게요."],
+      keyring: ["살 것 목록은 메모에 정리해 둘게요.", "미리 사 두면 배송이 몰리지 않아요."],
+      cue:     ["리뷰에서 배송과 내구성만 따로 봤어요. 그게 제일 정확해요.", "판매자 평점과 반품률도 같이 보세요."],
+      muse:    ["{P} 말대로 예산 안에서 셋으로 줄여 볼게요.", "매일 쓰는 물건이면 오래 기억에 남아요."],
+      buoy:    ["반품이 쉬운 쪽을 고르면 실패가 적어요.", "급하면 조금 비싸도 빠른 쪽이 나아요."]
+    },
+    build: {
+      pickle:  ["전원부터 하나씩 확인하면 금방 찾아요.", "부품 오면 바로 조립 들어갈 수 있게 해 둘게요."],
+      keyring: ["작업 시간 30분씩 끊어서 넣어 둘게요.", "숙제 먼저 끝내고 만드는 걸로 순서 잡을게요."],
+      cue:     ["{P} 말대로 에러 첫 줄과 방금 바꾼 부분만 보세요.", "센서 값이 튀면 전원과 접지부터 확인해요."],
+      muse:    ["이번 주는 ‘움직이는 손’까지만 목표로 해요.", "배운 걸 바로 만들어 보면 오래 남아요."],
+      buoy:    ["부품은 하나만 골라야 해요. 뭐가 제일 급해요?", "익숙한 보드를 계속 쓰는 게 좋아요."]
+    },
+    greet: {
+      pickle:  ["준비됐어요. 바로 시작할까요?", "저는 언제든 불러 주세요."],
+      keyring: ["오늘 할 일부터 정리해 둘게요.", "일정은 제가 보고 있어요."],
+      cue:     ["궁금한 건 말해 주세요. 바로 찾아볼게요.", "자료는 제가 준비해 둘게요."],
+      muse:    ["오늘은 뭘 만들어 볼까요? ✨", "재미있는 쪽으로 가 볼까요?"],
+      buoy:    ["고민되는 건 나란히 놓고 볼게요.", "뭐 고를 게 있으면 불러 주세요."]
+    },
+    general: {
+      pickle:  ["확인되는 대로 바로 알려 드릴게요.", "그 부분은 제가 맡아서 처리할게요."],
+      keyring: ["{P} 말대로 정리해서 일정에 넣어 둘게요.", "정리해서 한눈에 보이게 해 둘게요."],
+      cue:     ["자료 찾아서 정리해 드릴게요.", "출처부터 확인해 볼게요."],
+      muse:    ["조금 더 크게 생각해 보면 좋아요.", "순서만 잡으면 돼요. 서두르지 않아도 돼요."],
+      buoy:    ["두 가지 안을 나란히 놓고 볼게요.", "뭐가 제일 중요해요? 그걸 먼저 정해요."]
+    }
+  };
+
+  /* 주제별 ‘이어받을 AI’ */
+  var HANDOFF = {
+    weather:  { pickle:"keyring", keyring:"pickle", cue:"buoy",  muse:"keyring", buoy:"cue" },
+    schedule: { pickle:"keyring", keyring:"pickle", cue:"keyring", muse:"keyring", buoy:"keyring" },
+    media:    { pickle:"keyring", keyring:"pickle", cue:"buoy",  muse:"buoy",    buoy:"cue" },
+    shopping: { pickle:"muse",    keyring:"muse",   cue:"buoy",  muse:"buoy",    buoy:"cue" },
+    build:    { pickle:"cue",     keyring:"pickle", cue:"pickle", muse:"keyring", buoy:"cue" },
+    greet:    { pickle:"keyring", keyring:"pickle", cue:"muse",  muse:"cue",     buoy:"pickle" },
+    general:  { pickle:"keyring", keyring:"pickle", cue:"buoy",  muse:"buoy",    buoy:"cue" }
+  };
+
+  /* 주제별로 먼저 답할 AI 순서 (모두에게) */
+  var AFFINITY = {
+    weather:  ["pickle", "cue", "keyring", "buoy", "muse"],
+    schedule: ["keyring", "pickle", "cue", "muse", "buoy"],
+    media:    ["cue", "buoy", "muse", "pickle", "keyring"],
+    shopping: ["muse", "buoy", "cue", "pickle", "keyring"],
+    build:    ["pickle", "cue", "keyring", "buoy", "muse"],
+    greet:    ["pickle", "keyring", "cue", "muse", "buoy"],
+    general:  ["pickle", "keyring", "cue", "muse", "buoy"]
+  };
+
+  function mainLine(key, topic) {
+    var pool = (LINES[topic] && LINES[topic][key]) || LINES.general[key];
+    return pickVary(topic + ":" + key, pool);
+  }
+
+  function followLine(key, topic, primary) {
+    var pool = (FOLLOW[topic] && FOLLOW[topic][key]) || FOLLOW.general[key];
+    var line = pickVary("f:" + topic + ":" + key, pool);
+    return line.split("{P}").join("@" + AI[primary].name);
+  }
+
+  /* ===============================================================
+     6. 답장 계획
+     =============================================================== */
+  function planReplies(body, target) {
+    var topic = detectTopic(body);
+    var keys = mentionKeys(body).filter(function (k) { return k !== "all" && k !== "jihun"; });
+    var plan = [];
+
+    // 1) 누구를 콕 불렀다면 그 AI가 먼저
+    if (keys.length) {
+      keys.slice(0, 2).forEach(function (k) {
+        plan.push({ author: k, body: mainLine(k, topic) });
+      });
+      if (keys.length === 1) {
+        var helperA = HANDOFF[topic] && HANDOFF[topic][keys[0]];
+        if (helperA && helperA !== keys[0] && Math.random() < 0.75) {
+          plan.push({ author: helperA, body: followLine(helperA, topic, keys[0]) });
+        }
+      }
+      return { topic: topic, plan: plan };
+    }
+
+    // 2) 대상 칩에서 한 AI를 골랐다면
+    if (target !== "all" && AI[target]) {
+      plan.push({ author: target, body: mainLine(target, topic) });
+      var helperB = HANDOFF[topic] && HANDOFF[topic][target];
+      if (helperB && helperB !== target && Math.random() < 0.75) {
+        plan.push({ author: helperB, body: followLine(helperB, topic, target) });
+      }
+      return { topic: topic, plan: plan };
+    }
+
+    // 3) 모두에게 — 주제에 어울리는 2~3명 (인사면 다섯 명)
+    var order = AFFINITY[topic] || AFFINITY.general;
+    var count = topic === "greet" ? 5 : (2 + (Math.random() < 0.5 ? 1 : 0));
+    order.slice(0, count).forEach(function (k) {
+      plan.push({ author: k, body: mainLine(k, topic) });
+    });
+    return { topic: topic, plan: plan };
+  }
+
+  /* ===============================================================
+     7. 답장 넣기 (0.6~2.2초 간격)
+     =============================================================== */
+  function enqueue(list) {
+    if (!list || !list.length) return;
+    for (var i = 0; i < list.length; i++) state.queue.push(list[i]);
+    pump();
+  }
+
+  function pump() {
+    if (state.timer) return;
+    if (!state.queue.length) {
+      state.typing = null;
+      renderStatus();
+      renderTimeline({ scroll: "keep" });
+      return;
+    }
+    var item = state.queue[0];
+    state.typing = item.author;
+    renderStatus();
+    renderTimeline({ scroll: "bottom" });
+    var gap = REPLY_MIN + Math.floor(Math.random() * (REPLY_MAX - REPLY_MIN));
+    state.timer = setTimeout(function () {
+      state.timer = null;
+      state.queue.shift();
+      state.messages.push(norm({
+        id: newId(), author: item.author, body: item.body,
+        kind: "reply", target: "all", done: false, ts: Date.now()
+      }));
+      saveMessages();
+      state.typing = state.queue.length ? state.queue[0].author : null;
+      renderTimeline({ scroll: "bottom", smooth: true });
+      renderStatus();
+      renderSettings();
+      pump();
+    }, gap);
+  }
+
+  function stopReplies() {
+    if (state.timer) { clearTimeout(state.timer); state.timer = null; }
+    state.queue = [];
+    state.typing = null;
+  }
+
+  /* ===============================================================
+     8. 그리기
+     =============================================================== */
+  function avatarHtml(key, size) {
+    var a = agentOf(key);
+    var s = size || 38;
+    return '<div class="av" style="background:' + a.soft + ";width:" + s + "px;height:" + s + "px;font-size:" +
+      Math.round(s * 0.5) + 'px">' + a.emoji + "</div>";
+  }
+
+  function renderHero() {
+    var html = "";
+    ORDER.forEach(function (k) {
+      html += '<div class="av" style="background:' + AI[k].soft + '">' + AI[k].emoji + "</div>";
+    });
+    $("hero-avatars").innerHTML = html;
+  }
+
+  function renderTargetChips() {
+    var html = "";
+    TARGETS.forEach(function (t) {
+      var on = state.target === t.key ? " on" : "";
+      html += '<button class="chip' + on + '" data-act="target" data-value="' + t.key + '">' +
+        '<span class="em">' + t.emoji + "</span>" + esc(t.name) + "</button>";
+    });
+    $("target-chips").innerHTML = html;
+  }
+
+  function renderStatus() {
+    var dot = $("status-dot"), text = $("status-text");
+    if (state.typing && AI[state.typing]) {
+      dot.className = "dot on";
+      text.textContent = AI[state.typing].name + (state.queue.length > 1 ? " 등이" : "이") + " 답장 작성 중…";
+    } else {
+      dot.className = "dot on";
+      text.textContent = "5종 AI 자동 응답";
+    }
+  }
+
+  function emptyHtml() {
+    return '<div class="empty">' +
+      '<div class="big">💬</div>' +
+      "<h3>아직 대화가 없어요</h3>" +
+      "<p>아래 예시를 눌러 첫 지시를 남겨 보세요.</p>" +
+      '<div class="samples">' +
+        '<button class="sample" data-act="sample" data-text="내일 청주 날씨를 알아보고 우산 챙길지 알려줘">내일 청주 날씨를 알아보고 우산 챙길지 알려줘</button>' +
+        '<button class="sample" data-act="sample" data-text="이번 주 일정을 정리해서 알려줘">이번 주 일정을 정리해서 알려줘</button>' +
+        '<button class="sample" data-act="sample" data-text="NOVA MAX에 쓸 5V 냉각팬 후보를 비교해 줘">NOVA MAX에 쓸 5V 냉각팬 후보를 비교해 줘</button>' +
+      "</div></div>";
+  }
+
+  function renderTyping() {
+    if (!state.typing || !AI[state.typing]) return "";
+    var a = AI[state.typing];
+    var label = a.name + (state.queue.length > 1 ? " 등이" : "이") + " 답장 작성 중";
+    return '<div class="typing">' + avatarHtml(state.typing, 38) +
+      '<div class="typing-bubble"><span class="tdots"><i></i><i></i><i></i></span>' +
+      "<span>" + esc(label) + "…</span></div></div>";
+  }
+
+  function nearBottom() {
+    var doc = document.documentElement;
+    if (!doc || typeof window.innerHeight !== "number") return true;
+    return (window.innerHeight + window.scrollY) >= (doc.scrollHeight - 160);
+  }
+
+  function renderTimeline(opts) {
+    opts = opts || {};
+    var tl = $("timeline");
+    var keepY = window.scrollY || 0;
+    var atBottom = nearBottom();
+
+    var list = state.messages.slice().sort(function (a, b) {
+      if (a.ts === b.ts) return a.id < b.id ? -1 : 1;
+      return a.ts - b.ts;
+    });
+
+    $("msg-count").textContent = String(list.length);
+
+    if (!list.length) {
+      tl.innerHTML = emptyHtml() + renderTyping();
+      renderStatus();
+      return;
+    }
+
+    var html = "", lastDay = "";
+    list.forEach(function (m) {
+      var a = agentOf(m.author);
+      var mine = m.author === "jihun";
+      var day = dayLabel(m.ts);
+      if (day !== lastDay) {
+        html += '<div class="day">' + esc(day) + "</div>";
+        lastDay = day;
+      }
+      var cls = "msg" + (mine ? " mine" : "") + (m.done ? " done" : "");
+      var tag = mine
+        ? (m.kind === "task" ? "지시 · " + targetLabel(m.target) : "메시지")
+        : "답장";
+      html +=
+        '<article class="' + cls + '" data-id="' + esc(m.id) + '">' +
+          avatarHtml(m.author, 38) +
+          '<div class="msg-main">' +
+            '<div class="msg-head">' +
+              '<span class="name" style="color:' + a.color + '">' + esc(a.name) + "</span>" +
+              '<span class="badge">' + esc(a.badge) + "</span>" +
+              '<span class="time">' + fmtTime(m.ts) + "</span>" +
+            "</div>" +
+            '<div class="bubble">' + fmtBody(m.body) + "</div>" +
+            '<div class="msg-foot">' +
+              '<span class="tag">' + esc(tag) + "</span>" +
+              '<button class="check' + (m.done ? " on" : "") + '" data-act="done" data-id="' + esc(m.id) + '">' +
+                (m.done ? "✓ 완료" : "완료 표시") +
+              "</button>" +
+            "</div>" +
+          "</div>" +
+        "</article>";
+    });
+    tl.innerHTML = html + renderTyping();
+    renderStatus();
+
+    if (opts.scroll === "bottom" && atBottom) {
+      var last = tl.lastElementChild;
+      if (last && last.scrollIntoView) last.scrollIntoView({ block: "end", behavior: opts.smooth ? "smooth" : "auto" });
+    } else if (opts.scroll === "keep") {
+      window.scrollTo(0, keepY);
+    }
+  }
+
+  function renderMembers() {
+    var html = "";
+    ORDER.forEach(function (k) {
+      var a = AI[k];
+      html +=
+        '<article class="member" style="--c:' + a.color + ";--cs:" + a.soft + '">' +
+          '<div class="member-top">' +
+            '<div class="av" style="background:' + a.soft + '">' + a.emoji + "</div>" +
+            "<div><h3>" + esc(a.name) + "</h3><p class=\"role\">" + esc(a.role) + "</p></div>" +
+          "</div>" +
+          '<p class="member-desc">' + esc(DESC[k]) + "</p>" +
+          '<div class="member-foot">' +
+            '<span class="who">' + esc(a.emoji) + " " + esc(a.name) + "에게 바로 말 걸기</span>" +
+            '<button class="btn talk" data-act="talk" data-key="' + k + '">말 걸기</button>' +
+          "</div>" +
+        "</article>";
+    });
+    $("members").innerHTML = html;
+  }
+
+  function renderSettings() {
+    var n = state.messages.length;
+    $("store-count").textContent = n + "개";
+    var detail = $("store-detail");
+    if (state.savedAt) {
+      detail.textContent = "방금 저장했어요 · " + fmtTime(state.savedAt) + " · 새로고침해도 그대로 남아요.";
+    } else {
+      detail.textContent = "새로고침해도 대화가 그대로 남아요.";
+    }
+  }
+
+  function setTab(name) {
+    state.tab = name;
+    var names = ["chat", "members", "settings"];
+    for (var i = 0; i < names.length; i++) {
+      var tab = $("tab-" + names[i]);
+      var panel = $("panel-" + names[i]);
+      if (tab) tab.className = "tab" + (names[i] === name ? " on" : "");
+      if (panel) panel.className = "panel" + (names[i] === name ? " on" : "");
+    }
+    if (name === "members") renderMembers();
+    if (name === "settings") renderSettings();
+    window.scrollTo(0, 0);
+  }
+
+  /* ===============================================================
+     9. 동작
+     =============================================================== */
+  function addUserMessage(body) {
+    var msg = norm({
+      id: newId(), author: "jihun", body: body,
+      kind: "task", target: state.target, done: false, ts: Date.now()
+    });
+    state.messages.push(msg);
+    saveMessages();
+    return msg;
+  }
+
+  function send() {
+    var input = $("msg-input");
+    var text = String(input.value || "").replace(/\s+$/, "");
+    if (!text.trim()) {
+      toast("내용을 먼저 적어 주세요");
+      if (input.focus) input.focus();
+      return;
+    }
+    addUserMessage(text);
+    input.value = "";
+    renderTimeline({ scroll: "bottom", smooth: true });
+    renderSettings();
+    var planned = planReplies(text, state.target);
+    if (planned.plan.length) {
+      enqueue(planned.plan);
+      toast(planned.plan.length > 1 ? planned.plan.length + "명이 답장을 준비해요" : AI[planned.plan[0].author].name + "이 답장을 준비해요");
+    }
+  }
+
+  function toggleDone(id) {
+    for (var i = 0; i < state.messages.length; i++) {
+      if (state.messages[i].id === id) {
+        state.messages[i].done = !state.messages[i].done;
+        break;
+      }
+    }
+    saveMessages();
+    renderTimeline({ scroll: "keep" });
+  }
+
+  function setTarget(key) {
+    if (!isTarget(key)) return;
+    state.target = key;
+    renderTargetChips();
+  }
+
+  function talkTo(key) {
+    if (!AI[key]) return;
+    setTarget(key);
+    setTab("chat");
+    var input = $("msg-input");
+    if (input.focus) input.focus();
+    toast(AI[key].name + "에게 말을 걸어요. 하고 싶은 일을 적어 주세요.");
+  }
+
+  function fillSample(text) {
+    var input = $("msg-input");
+    input.value = text;
+    if (input.focus) input.focus();
+    try { input.setSelectionRange(text.length, text.length); } catch (e) {}
+  }
+
+  function exportJson() {
+    var data = {
+      room: "ai-collab-room",
+      exported_at: new Date().toISOString(),
+      count: state.messages.length,
+      agents: ORDER.map(function (k) { return AI[k].name; }),
+      messages: state.messages
+    };
+    var text = JSON.stringify(data, null, 2);
+    var name = "ai-collab-room-" + stamp() + ".json";
+    var url = null;
+    try {
+      var blob = new Blob([text], { type: "application/json" });
+      url = window.URL.createObjectURL(blob);
+    } catch (e) {
+      url = "data:application/json;charset=utf-8," + encodeURIComponent(text);
+    }
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    if (url && url.indexOf("blob:") === 0 && window.URL.revokeObjectURL) {
+      setTimeout(function () { window.URL.revokeObjectURL(url); }, 1500);
+    }
+    toast("JSON 파일로 내보냈어요 (" + state.messages.length + "개)");
+  }
+
+  function resetRoom() {
+    if (!window.confirm("대화 내역을 모두 지울까요? 되돌릴 수 없어요.")) return;
+    stopReplies();
+    lsDel(STORE);
+    state.messages = [];
+    state.savedAt = 0;
+    renderTimeline({ scroll: "keep" });
+    renderSettings();
+    toast("대화를 초기화했어요");
+  }
+
+  /* ===============================================================
+     10. 이벤트
+     =============================================================== */
+  document.addEventListener("click", function (e) {
+    var el = e.target && e.target.closest ? e.target.closest("[data-act]") : null;
+    if (!el) return;
+    var act = el.getAttribute("data-act");
+    if (act === "tab") { setTab(el.getAttribute("data-tab")); return; }
+    if (act === "target") { setTarget(el.getAttribute("data-value")); return; }
+    if (act === "talk") { talkTo(el.getAttribute("data-key")); return; }
+    if (act === "send") { send(); return; }
+    if (act === "done") { toggleDone(el.getAttribute("data-id")); return; }
+    if (act === "sample") { fillSample(el.getAttribute("data-text")); return; }
+    if (act === "export") { exportJson(); return; }
+    if (act === "reset") { resetRoom(); return; }
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.target && e.target.id === "msg-input" && (e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      e.preventDefault();
+      send();
+    }
+  });
+
+  /* ===============================================================
+     11. 시작
+     =============================================================== */
+  function init() {
+    state.messages = loadMessages();
+    renderHero();
+    renderTargetChips();
+    renderMembers();
+    renderSettings();
+    renderTimeline({ scroll: "bottom" });
+    renderStatus();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>
