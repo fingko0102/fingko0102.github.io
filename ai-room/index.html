@@ -959,9 +959,22 @@
   /* 받침 유무에 맞춰 조사를 고른다: josa("피클","이","가") → "이" */
   function josa(word, withFinal, withoutFinal) {
     var s = String(word || "");
+    if (!s) return withoutFinal;
     var c = s.charCodeAt(s.length - 1);
     if (c < 0xAC00 || c > 0xD7A3) return withoutFinal;
     return ((c - 0xAC00) % 28) ? withFinal : withoutFinal;
+  }
+
+  /* "{P}가 / {P}는 / {P}를 / {P}와"를 이름과 알맞은 조사로 바꾼다 */
+  function fillPrev(line, authorKey) {
+    var name = "@" + (AI[authorKey] ? AI[authorKey].name : authorKey);
+    var pairs = { "가": ["이", "가"], "는": ["은", "는"], "를": ["을", "를"], "와": ["과", "와"] };
+    var out = String(line);
+    for (var k in pairs) {
+      if (!Object.prototype.hasOwnProperty.call(pairs, k)) continue;
+      out = out.split("{P}" + k).join(name + josa(name, pairs[k][0], pairs[k][1]));
+    }
+    return out.split("{P}").join(name);
   }
 
   var MENTION_RE = /@(피클|키링|Cue|큐|뮤즈|부이|전체|모두|지훈)/gi;
@@ -1303,14 +1316,14 @@
       keyring: ["{P} 말대로 보는 날 정해지면 알림 걸어 둘게요.", "{P}가 본 시간표에 맞춰, 집에 오는 시간까지 계산해 둘게요."],
       cue:     ["{P} 말이 맞아요. 리뷰는 최근 것만 보는 게 정확해요.", "{P}가 고른 후보를 표로 정리해 드릴까요? 시간·자리·가격이 한눈에 보여요."],
       muse:    ["{P} 말대로 고르면, 팝콘까지 생각한 코스로 짜 드릴게요. 🍿", "{P}가 말한 것 중에 한 편만 제대로 골라요. 그게 오래 남아요."],
-      buoy:    ["{P} 말에 비교를 붙이면, 자리 좋은 쪽이 만족도가 높아요.", "{P}가 말한 후보는 인기 메뉴 세 개만 비교해도 충분해요."]
+      buoy:    ["{P} 말에 비교를 붙이면, 자리 좋은 쪽이 만족도가 높아요.", "{P}가 말한 후보는 세 개만 비교해도 충분해요."]
     },
     shopping: {
       pickle:  ["{P} 말대로 예산부터 정하면, 결제 전에 금액은 꼭 확인받고 진행할게요.", "{P}가 고른 후보는 재고 확인해서 바로 알려 드릴게요."],
-      keyring: ["{P} 말대로 살 것 목록은 메모에 정리해 둘게요.", "{P}가 말한 것처럼 미리 사 두면 배송이 몰리지 않아요."],
+      keyring: ["{P} 말대로 살 것 목록은 메모에 정리해 둘게요.", "{P}가 말한 예산 안에서 미리 사 두면 배송이 몰리지 않아요."],
       cue:     ["{P} 말에 근거를 붙이면, 리뷰에서 배송과 내구성만 따로 봤어요. 그게 제일 정확해요.", "{P}가 고른 후보는 판매자 평점과 반품률도 같이 보세요."],
       muse:    ["{P} 말대로 예산 안에서 셋으로 줄여 볼게요.", "{P}가 말한 것 중에 매일 쓰는 물건이면 오래 기억에 남아요."],
-      buoy:    ["{P} 말에 비교를 붙이면, 반품이 쉬운 쪽을 고르면 실패가 적어요.", "{P}가 급하다고 했으니, 조금 비싸도 빠른 쪽이 나아요."]
+      buoy:    ["{P} 말에 비교를 붙이면, 급할 땐 조금 비싸도 빠른 쪽이 나아요.", "{P}가 고른 후보는 반품이 쉬운 쪽으로 정하면 실패가 적어요."]
     },
     build: {
       pickle:  ["{P} 말대로 전원부터 하나씩 확인하면 금방 찾아요. 제가 순서 잡을게요.", "{P}가 말한 대로 부품 오면 바로 조립 들어갈 수 있게 해 둘게요."],
@@ -1460,12 +1473,12 @@
   function followLine(key, topic, primary) {
     var pool = (FOLLOW[topic] && FOLLOW[topic][key]) || FOLLOW.general[key];
     var line = pickVary("f:" + topic + ":" + key, pool);
-    return line.split("{P}").join("@" + AI[primary].name);
+    return fillPrev(line, primary);
   }
   function debateLine(key, role, issue, prev) {
     var pool = (DEBATE[key] && DEBATE[key][role]) || DEBATE[key].add;
     var line = pickVary("d:" + key + ":" + role, pool).split("{issue}").join(issue);
-    if (prev) line = line.split("{P}").join("@" + AI[prev.author].name);
+    if (prev) line = fillPrev(line, prev.author);
     return line;
   }
 
