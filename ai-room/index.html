@@ -964,9 +964,9 @@
   var REPLY_GAP = [700, 1900];      // 일반 답장 간격 (ms)
   var DEBATE_GAP = [900, 1400];     // AI끼리 대화 간격 (ms) — 20턴도 지루하지 않게
 
-  /* gemini-2.0-flash는 2026-06-01에 종료됐다. 지금 쓰는 flash 모델로 시작하고,
-     모델이 없으면(404) 다음 모델로 자동 전환한다. */
-  var GEMINI_MODELS = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"];
+  /* gemini-2.0-flash는 2026-06-01에 종료됐다. 가장 안정적이고 빠른 flash-lite를 1순위로 두고,
+     모델이 없거나(404) 서버가 혼잡하거나(503) 한도가 찼으면(429) 다음 모델로 자동 전환한다. */
+  var GEMINI_MODELS = ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-3.7-flash", "gemini-3.8-flash"];
   var GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models/";
   var API_GAP = 5000;               // Gemini 요청 최소 간격 (무료 한도 보호)
   var API_TIMEOUT = 30000;
@@ -987,7 +987,7 @@
     booted: false,
     gen: 0,          // 대화 생성 토큰 — 정지·새 질문 때 바뀐다
     waiting: false,  // Gemini 응답을 기다리는 중 (큐가 비어 있어도 pump가 겹치지 않게)
-    modelIdx: 0,     // GEMINI_MODELS 인덱스 (404면 다음 모델로)
+    modelIdx: 0,     // GEMINI_MODELS 인덱스 (404·503·429면 다음 모델로)
     nextApiAt: 0,    // 다음 Gemini 요청 가능 시각
     aiOff: false,    // 키 오류로 이번 실행에서 API를 포기했다
     aiWarned: false  // 오류 토스트를 한 번만 띄우기
@@ -2702,11 +2702,12 @@
     });
   }
 
-  /* 모델이 없다면(404) 다음 모델로, 일시 오류면 한 번 다시 — 그래도 안 되면 기본 엔진 */
+  /* 모델이 없으면(404) · 서버 혼잡(503) · 한도 초과(429)면 다음 모델로 바로 넘어가고,
+     마지막 모델이면 잠깐 기다렸다 한 번 더 — 그래도 안 되면 기본 엔진 */
   function geminiRequest(item, retries) {
     return geminiCall(item).catch(function (err) {
       var code = err && err.code ? err.code : 0;
-      if (code === 404 && state.modelIdx < GEMINI_MODELS.length - 1) {
+      if ((code === 404 || code === 503 || code === 429) && state.modelIdx < GEMINI_MODELS.length - 1) {
         state.modelIdx++;
         return geminiRequest(item, retries);
       }
@@ -2746,6 +2747,14 @@
       return;
     }
     if (!state.aiWarned) { toast("Gemini 연결이 안 돼 기본 모드로 답할게요"); state.aiWarned = true; }
+  }
+
+  /* 새 메시지·새 대화를 시작할 때마다 AI 상태를 처음으로 돌린다 —
+     한 번 실패했다고 그 뒤 대화까지 기본 모드로 잠기지 않게. */
+  function resetAiState() {
+    state.aiOff = false;
+    state.aiWarned = false;
+    state.modelIdx = 0;
   }
 
   /* ================================================================
@@ -3048,8 +3057,7 @@
     if (v.length < 20) { toast("키가 너무 짧아요 · 붙여 넣은 내용을 확인해 주세요"); if (input.focus) input.focus(); return; }
     if (!lsSet(KEY_GEMINI, v)) { toast("저장하지 못했어요 · 브라우저 저장 공간을 확인해 주세요"); return; }
     input.value = "";
-    state.aiOff = false;
-    state.aiWarned = false;
+    resetAiState();
     renderGemini();
     toast("Gemini API 키를 저장했어요 · 이제 실제 AI로 답해요");
   }
@@ -3058,8 +3066,7 @@
     var input = $("gemini-key");
     lsDel(KEY_GEMINI);
     if (input) input.value = "";
-    state.aiOff = false;
-    state.aiWarned = false;
+    resetAiState();
     renderGemini();
     toast("키를 지웠어요 · 기본 모드로 답해요");
   }
@@ -3299,8 +3306,7 @@
       return;
     }
     if (state.debate.active) stopReplies(true);
-    state.aiWarned = false;
-    state.aiOff = false;
+    resetAiState();
     addUserMessage(text);
     input.value = "";
     autoGrow(input);
@@ -3383,6 +3389,7 @@
     if (!theme) theme = "오늘 할 일을 어떻게 나눌까";
     closeSheet();
     stopReplies(true);
+    resetAiState();
     var planned = planDebate(theme, state.turns);
     state.debate = { active:true, kind:"debate", issue:planned.issue, total:planned.plan.length, done:0 };
     state.pinned = true;
