@@ -506,8 +506,22 @@
   .kv dt{color:var(--sub-2);font-weight:800}
   .kv dd{margin:0;color:var(--ink);word-break:break-all;font-weight:600}
   .btn-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}
-  .state-badge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;color:var(--brand-ink);background:var(--brand-soft);border-radius:999px;padding:4px 10px}
-  .state-badge i{width:6px;height:6px;border-radius:50%;background:var(--brand)}
+  .state-badge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;color:var(--brand-ink);background:var(--brand-soft);border-radius:999px;padding:4px 10px;white-space:nowrap}
+  .state-badge i{width:6px;height:6px;border-radius:50%;background:var(--brand);flex:0 0 auto}
+  .state-badge.off{color:var(--sub);background:var(--surface-2)}
+  .state-badge.off i{background:var(--sub-2)}
+  .key-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+  .key-row input{
+    flex:1 1 170px;min-width:0;border:1px solid var(--line);background:var(--surface-2);
+    border-radius:12px;padding:9px 12px;font-size:13px;font-weight:700;color:var(--ink);
+    letter-spacing:.01em;
+  }
+  .key-row input::placeholder{color:var(--sub-2);font-weight:500;letter-spacing:0}
+  .key-row input:focus{outline:2px solid var(--brand);outline-offset:1px}
+  .key-row .btn{flex:0 0 auto;padding:9px 14px}
+  .key-note{margin:9px 0 0;font-size:11.5px;line-height:1.55;color:var(--sub-2)}
+  .key-note b{color:var(--brand-ink);font-weight:800}
+  .key-note code{font-size:11px;background:var(--surface-2);border-radius:6px;padding:1px 5px;color:var(--sub)}
   .about-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
   .about-pill{font-size:11.5px;font-weight:800;color:var(--sub);background:var(--surface-2);border-radius:999px;padding:4px 10px}
 
@@ -794,14 +808,29 @@
         <div class="card">
           <div class="card-head">
             <h3 class="card-title">AI끼리 대화 턴</h3>
-            <span class="state-badge"><i></i><span>기본 20턴</span></span>
+            <span class="state-badge"><i></i><span id="turns-badge">기본 20턴</span></span>
           </div>
-          <p class="tiny">5명이 번갈아 말하는 횟수예요. 길게 볼수록 앞사람 말을 더 깊게 이어 가요.</p>
+          <p class="tiny">'모두에게' 보내면 이 턴 수만큼 다섯 AI가 골고루 돌아가며 답해요. 길게 볼수록 앞사람 말을 더 깊게 이어 가요.</p>
           <div class="seg" id="settings-turns" role="group" aria-label="AI끼리 대화 턴 수" style="margin-top:10px">
             <button data-act="turns" data-value="10">10턴</button>
             <button data-act="turns" data-value="20">20턴</button>
             <button data-act="turns" data-value="30">30턴</button>
           </div>
+        </div>
+
+        <div class="card" id="gemini-card">
+          <div class="card-head">
+            <h3 class="card-title">AI 연결 (Gemini API 키)</h3>
+            <span class="state-badge off" id="gemini-badge"><i></i><span id="gemini-state">미설정 · 기본 모드</span></span>
+          </div>
+          <p class="tiny">키를 넣으면 다섯 AI가 진짜 AI로 답해요. 질문과 최근 대화가 Google Gemini로 전송되고, 키는 이 브라우저에만 저장돼요.</p>
+          <div class="key-row">
+            <label class="sr-only" for="gemini-key">Gemini API 키</label>
+            <input id="gemini-key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="AIza... 로 시작하는 키">
+            <button class="btn primary" data-act="save-key">저장</button>
+            <button class="btn ghost" data-act="clear-key">초기화</button>
+          </div>
+          <p class="key-note" id="gemini-hint">키가 없으면 기본 엔진으로 답해요. 발급은 <b>aistudio.google.com/app/apikey</b> 에서 할 수 있어요.</p>
         </div>
 
         <div class="card">
@@ -815,10 +844,10 @@
 
         <div class="card">
           <div class="card-head"><h3 class="card-title">이 방에 대해</h3></div>
-          <p class="tiny">설치도, 로그인도 필요 없어요. 파일 하나로 움직이고, 서버로 아무것도 보내지 않아요.</p>
+          <p class="tiny">설치도, 로그인도 필요 없어요. 파일 하나로 움직여요. Gemini 키를 넣지 않으면 서버로 아무것도 보내지 않고, 넣으면 질문과 최근 대화만 Google로 전송돼요.</p>
           <div class="about-list">
             <span class="about-pill">피클 · 키링 · Cue · 뮤즈 · 부이</span>
-            <span class="about-pill">버전 4.0</span>
+            <span class="about-pill">버전 4.1</span>
           </div>
         </div>
       </section>
@@ -930,9 +959,17 @@
   var KEY_MSG = "aicr.messages.v1";
   var KEY_THEME = "aicr.theme.v1";
   var KEY_TURNS = "aicr.turns.v1";
+  var KEY_GEMINI = "aicr.gemini_key.v1";   // API 키는 이 브라우저에만 저장한다 (코드에 넣지 않음)
 
   var REPLY_GAP = [700, 1900];      // 일반 답장 간격 (ms)
   var DEBATE_GAP = [900, 1400];     // AI끼리 대화 간격 (ms) — 20턴도 지루하지 않게
+
+  /* gemini-2.0-flash는 2026-06-01에 종료됐다. 지금 쓰는 flash 모델로 시작하고,
+     모델이 없으면(404) 다음 모델로 자동 전환한다. */
+  var GEMINI_MODELS = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"];
+  var GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models/";
+  var API_GAP = 5000;               // Gemini 요청 최소 간격 (무료 한도 보호)
+  var API_TIMEOUT = 30000;
 
   var state = {
     tab: "chat",
@@ -946,8 +983,14 @@
     turns: 20,
     preset: 0,
     pinned: true,
-    debate: { active:false, issue:"", total:0, done:0 },
-    booted: false
+    debate: { active:false, kind:"", issue:"", total:0, done:0 },
+    booted: false,
+    gen: 0,          // 대화 생성 토큰 — 정지·새 질문 때 바뀐다
+    waiting: false,  // Gemini 응답을 기다리는 중 (큐가 비어 있어도 pump가 겹치지 않게)
+    modelIdx: 0,     // GEMINI_MODELS 인덱스 (404면 다음 모델로)
+    nextApiAt: 0,    // 다음 Gemini 요청 가능 시각
+    aiOff: false,    // 키 오류로 이번 실행에서 API를 포기했다
+    aiWarned: false  // 오류 토스트를 한 번만 띄우기
   };
 
   var seenIds = Object.create(null);
@@ -971,21 +1014,27 @@
 
   function agentOf(key) { return AI[key] || ME; }
 
-  /* 받침(종성) 판정 — 한글 음절만 계산하고, 영문·숫자로 끝나면 받침 없음으로 본다 */
-  function hasFinal(word) {
+  /* 받침(종성) 판정 — 한글 음절은 그대로, 영문·숫자로 끝나면 한국어로 읽었을 때의 받침을 본다
+     (VR → 브이알 → ㄹ 받침, API → 에이피아이 → 받침 없음) */
+  var END_SOUND = {
+    A:0, B:0, C:0, D:0, E:0, F:1, G:0, H:0, I:0, J:0, K:0, L:2, M:1, N:1, O:0,
+    P:0, Q:0, R:2, S:0, T:0, U:0, V:0, W:0, X:0, Y:0, Z:0,
+    "0":1, "1":2, "2":0, "3":1, "4":0, "5":0, "6":1, "7":2, "8":2, "9":0
+  };
+  function endSound(word) {   // 0 = 받침 없음, 1 = 받침 있음, 2 = ㄹ 받침
     var s = String(word === null || word === undefined ? "" : word).replace(/\s+$/, "");
-    if (!s) return false;
+    if (!s) return 0;
     var c = s.charCodeAt(s.length - 1);
-    if (c < 0xAC00 || c > 0xD7A3) return false;
-    return ((c - 0xAC00) % 28) !== 0;
+    if (c < 0xAC00 || c > 0xD7A3) {
+      var ch = s.charAt(s.length - 1).toUpperCase();
+      return Object.prototype.hasOwnProperty.call(END_SOUND, ch) ? END_SOUND[ch] : 0;
+    }
+    var jong = (c - 0xAC00) % 28;
+    if (jong === 0) return 0;
+    return jong === 8 ? 2 : 1;
   }
-  function hasRieul(word) {
-    var s = String(word === null || word === undefined ? "" : word).replace(/\s+$/, "");
-    if (!s) return false;
-    var c = s.charCodeAt(s.length - 1);
-    if (c < 0xAC00 || c > 0xD7A3) return false;
-    return ((c - 0xAC00) % 28) === 8;
-  }
+  function hasFinal(word) { return endSound(word) !== 0; }
+  function hasRieul(word) { return endSound(word) === 2; }
 
   /* 조사 고르기: josa("피클","이","가") → "이", josa("Cue","이","가") → "가" */
   function josa(word, withFinal, withoutFinal) {
@@ -1536,6 +1585,248 @@
     greet:    ["pickle", "keyring", "cue", "buoy", "muse"],
     general:  ["pickle", "keyring", "cue", "buoy", "muse"]
   };
+
+  /* ================================================================
+     5-1. 질문 문장 — 기본 엔진이 엉뚱한 문장을 하지 않도록
+     질문에서 낱말을 뽑고, 각 AI 역할에 맞는 설명·비교 문장을 만든다.
+     ================================================================ */
+  var Q_STRIP = [
+    /(?:에\s*대해\s*|에\s*대해서\s*)?(?:알려\s*줘|알려\s*주세요|알려\s*줄래|설명해\s*줘|설명해\s*주세요|설명\s*좀|가르쳐\s*줘|가르쳐\s*주세요|검색해\s*줘|찾아\s*줘|정리해\s*줘|정리해\s*줄래)$/,
+    /(?:이라는\s*게|이라는\s*건|이라는\s*것은|라는\s*게|라는\s*건|라는\s*것은)$/,
+    /(?:이란|란)$/,
+    /(?:은|는|이|가|을|를)?\s*(?:뭐야|뭐임|뭐지|뭔가요|뭔지|뭐냐|무엇인가요|무엇입니까|무슨\s*뜻이야|무슨\s*뜻이에요|무슨\s*의미야|무슨\s*의미예요|무엇)$/,
+    /(?:의\s*)?(?:뜻|의미|정의|원리|장단점|종류|가격|사용법|쓰는\s*법|차이|특징)$/
+  ];
+
+  function isQuestion(text) {
+    var s = String(text || "").trim();
+    if (!s) return false;
+    if (/[?？]\s*$/.test(s)) return true;
+    return /(?:이란|뭐야|뭐임|뭔가요|뭔지|뭐지|무엇|무슨\s*(?:뜻|의미)|알려\s*줘|알려\s*주세요|설명해|가르쳐|어떻게|어때|왜\s|인가요|입니까|일까|쓸까|할까)/.test(s);
+  }
+
+  /* "기어VR이란?" → "기어VR", "오늘 뭐 할까?" → null(질문 전체로 답한다) */
+  function questionTerm(text) {
+    var s = String(text || "").trim().replace(/[\s?!.~…,]+$/, "");
+    if (!s) return null;
+    var out = s, hit = false;
+    for (var pass = 0; pass < 3; pass++) {
+      var changed = false;
+      for (var i = 0; i < Q_STRIP.length; i++) {
+        if (Q_STRIP[i].test(out)) { out = out.replace(Q_STRIP[i], ""); hit = true; changed = true; }
+      }
+      if (!changed) break;
+    }
+    out = out.replace(/^[\s"'“”‘’「」『』()\[\]]+/, "").replace(/[\s"'“”‘’「」『』()\[\]]+$/, "").trim();
+    if (!hit || out.length < 2) return null;
+    if (out.length > 26) out = out.slice(0, 26).replace(/\s+\S*$/, "");
+    return out;
+  }
+
+  /* 낱말이 기기인지, 프로그램인지, 개념인지 — 비교 기준을 고르는 데만 쓴다 */
+  function termKind(t) {
+    var s = String(t || "").toLowerCase();
+    if (/(vr|ar|xr|헤드셋|안경|스마트폰|태블릿|노트북|기기|로봇|센서|모터|서보|냉각팬|배터리|프린터|카메라|드론|충전기|키보드)/.test(s)) return "device";
+    if (/(api|앱|어플|프로그램|소프트웨어|ai|인공지능|챗봇|모델|코드|언어|플랫폼|서비스|웹사이트|사이트)/.test(s)) return "software";
+    if (/(강아지|고양이|달팽이|식물|동물|곤충|물고기)/.test(s)) return "living";
+    if (/(박물관|공원|학교|식당|카페|도시|나라|시장|역|터미널|미술관)/.test(s)) return "place";
+    return "concept";
+  }
+
+  var Q_CHECK = {
+    device:   "무게·가격·호환 기기",
+    software: "기능·가격·지원 기기",
+    living:   "먹이·수명·키우는 법",
+    place:    "위치·영업시간·가는 길",
+    concept:  "정의·예시·주의할 점"
+  };
+  var Q_NOUN = {
+    device: "기기", software: "프로그램", living: "생물", place: "장소", concept: "개념"
+  };
+
+  /* 아주 흔한 낱말은 기본 엔진에서도 한 줄 정의를 바로 준다 */
+  var GLOSSARY = [
+    { k:["기어vr","gearvr","gear vr"], t:"삼성과 오큘이 함께 만든 스마트폰 결합형 VR 헤드셋이에요. 갤럭시를 앞쪽에 끼우면 그 화면이 눈앞에 크게 보이는 방식이에요." },
+    { k:["vr","가상현실","virtual reality"], t:"VR은 눈앞 화면으로 다른 공간에 있는 것처럼 보이게 하는 기술이에요. 머리에 쓰는 헤드셋으로 보고, 손 컨트롤러로 움직여요." },
+    { k:["ar","증강현실"], t:"AR은 카메라로 비친 실제 화면 위에 글자·그림을 겹쳐 보여 주는 기술이에요. 길 안내 화살표나 게임 속 캐릭터가 대표적이에요." },
+    { k:["xr","확장현실"], t:"XR은 VR(가상현실)과 AR(증강현실)을 아우르는 말이에요. 현실과 가상을 섞어 보여 주는 기기를 통틀어 불러요." },
+    { k:["ai","인공지능"], t:"AI는 사람이 하던 판단·분류·생성을 컴퓨터가 하게 만든 기술이에요. 요즘 것은 대부분 데이터에서 패턴을 배우는 방식이에요." },
+    { k:["api"], t:"API는 프로그램끼리 정해진 방식으로 부탁하고 답을 받는 약속이에요. 날씨 앱이 기상 자료를 받아올 때 뒤에서 API를 불러요." },
+    { k:["3d프린터","3d 프린터","삼디프린터"], t:"3D 프린터는 플라스틱 실을 녹여 층층이 쌓아 물건을 만드는 기계예요. 필라멘트·노즐·베드, 이 세 낱말만 알면 시작할 수 있어요." },
+    { k:["서보모터","서보"], t:"서보모터는 '몇 도로 돌아라'처럼 각도를 정해 주면 그 위치로 움직이는 모터예요. 로봇 관절에 많이 써요." },
+    { k:["라즈베리파이","라즈베리 파이"], t:"라즈베리파이는 손바닥만 한 리눅스 컴퓨터예요. GPIO 핀에 센서와 모터를 붙여 만들 때 많이 써요." },
+    { k:["아두이노"], t:"아두이노는 센서와 모터를 붙여 쓰는 작은 보드예요. 코드를 올려 두면 전원이 들어와 있는 동안 계속 같은 동작을 해요." },
+    { k:["양자컴퓨터","양자 컴퓨터"], t:"양자컴퓨터는 0과 1을 동시에 담는 큐비트로 계산하는 컴퓨터예요. 특정 계산만 아주 빠르고, 아직은 연구 단계가 많아요." }
+  ];
+
+  function glossaryOf(term) {
+    var s = String(term || "").toLowerCase().replace(/\s+/g, "");
+    if (!s) return "";
+    for (var i = 0; i < GLOSSARY.length; i++) {
+      for (var j = 0; j < GLOSSARY[i].k.length; j++) {
+        if (s === GLOSSARY[i].k[j].replace(/\s+/g, "")) return GLOSSARY[i].t;
+      }
+    }
+    return "";
+  }
+
+  var Q_ORDER = ["cue", "buoy", "pickle", "keyring", "muse"];
+
+  /* 낱말을 알아낸 질문 — {T} 낱말, {C} 확인 기준, {KIND} 종류 */
+  var DEFINE_LINES = {
+    cue: {
+      lead: [
+        "{T}는 {KIND} 쪽 이야기예요. 정의는 한 줄로 줄이면 — 무엇에 쓰는지 · 어떻게 움직이는지 · 무엇과 비교되는지, 이 셋이에요.",
+        "{T}를 찾으면 비슷한 이름이 많이 나와요. 모델명이나 세대까지 붙여 찾으면 정확한 자료가 나와요.",
+        "{T}는 이름만으로는 범위가 넓어요. 한 문장 정의와 예시 하나를 같이 보면 이해가 빨라요."
+      ],
+      follow: [
+        "{P} 말에 근거를 붙이면 {T}는 {C} 세 가지로 정리돼요. 이 셋이 확인되면 정의는 끝나요.",
+        "{P} 말이 맞아요. {T} 설명은 출처마다 조금씩 달라서 두 곳을 비교해 보는 게 안전해요."
+      ]
+    },
+    pickle: {
+      lead: [
+        "{T}는 직접 만져 봐야 감이 와요. 쓸 수 있는 자리가 있으면 10분만 써 보고 판단하는 게 빨라요.",
+        "{T}가 필요한 순간이 언제인지부터 정하면 돼요. 살지 말지보다 언제 쓸지가 먼저예요.",
+        "{T}를 실제로 써 볼 수 있는 곳이 있는지 먼저 확인할게요. 있으면 제가 바로 알아봐요."
+      ],
+      follow: [
+        "{P}가 정리한 대로예요. {T}를 실제로 써 볼 자리를 하나 정해 두면 답이 빨라져요.",
+        "{P} 말에 하나 더하면, {T}를 써 볼 거면 준비물과 시간부터 확인해요."
+      ]
+    },
+    keyring: {
+      lead: [
+        "{T}는 ① 한 줄 뜻 ② 쓰는 상황 ③ 대신할 것 — 세 칸에 적어 두면 안 잊어버려요.",
+        "{T}는 지금 알아둘 것과 나중에 찾아볼 것을 나눠 두면 정리가 쉬워요.",
+        "{T}를 한 줄로 정리하면 '무엇에 쓰는 물건인지'가 남아요. 그 한 줄부터 적어 둬요."
+      ],
+      follow: [
+        "{P} 말까지 합치면 {T}는 한 줄로 정리돼요. 그 한 줄을 메모에 적어 두면 다음에 바로 써요.",
+        "{P}가 말한 것 중 확인할 건 {C}예요. 이 셋만 적어 두세요."
+      ]
+    },
+    muse: {
+      lead: [
+        "{T}가 궁금해진 이유가 있어요? 그게 어떤 계획이랑 이어지는지 보면 훨씬 재미있어져요.",
+        "{T}는 한 번에 다 알려고 하지 말고, 오늘은 한 가지만 가져가요.",
+        "{T}를 알게 되면 무엇이 달라지는지부터 그려 보면 기억에 오래 남아요."
+      ],
+      follow: [
+        "{P} 말대로면 {T}는 오늘 하나만 기억해도 충분해요. 나머지는 궁금해질 때 찾아요.",
+        "{P} 정리에 재미 한 칸만 더하면 {T}를 직접 써 보는 날을 정해 봐요."
+      ]
+    },
+    buoy: {
+      lead: [
+        "{T}를 고르는 문제라면 비슷한 것 셋만 나란히 놓아요. {KIND}는 보통 {C}에서 갈려요.",
+        "{T}와 자주 비교되는 것부터 정리하면 판단이 빨라져요. 기준은 {C} 세 개면 충분해요.",
+        "{T}는 같은 이름의 다른 모델과 섞이기 쉬워요. 비교할 때는 모델명까지 같이 적어요."
+      ],
+      follow: [
+        "{P} 말에 비교를 붙이면 {T}는 {C}로 줄여 볼 수 있어요.",
+        "{P}가 말한 것에 다른 후보 하나만 더 놓고 보면, 차이는 대개 {C} 중 하나예요."
+      ]
+    }
+  };
+
+  /* 낱말을 못 뽑은 질문 — 질문을 그대로 받고 조건을 묻는다 */
+  var OPEN_LINES = {
+    cue: {
+      lead: [
+        "{Q} — 이걸 정확히 답하려면 조건이 두 개 필요해요. 지금 상황과 원하는 결과만 알려 주세요.",
+        "{Q}에 대한 자료는 기준을 먼저 정해야 모여요. 무엇을 우선할지 하나만 골라 주세요.",
+        "{Q}는 답이 여러 갈래로 갈리는 질문이에요. 어느 쪽이 궁금한지 알려 주면 바로 찾아볼게요."
+      ],
+      follow: [
+        "{P} 말에 기준을 붙이면 확인할 건 세 개로 줄어요. 그 셋만 보면 답이 나와요.",
+        "{P} 말이 맞아요. 같은 질문도 조건이 다르면 답이 달라져서 조건부터 적어 두는 게 좋아요."
+      ]
+    },
+    pickle: {
+      lead: [
+        "{Q} — 오늘 바로 할 수 있는 한 가지만 정해요. 나머지는 그다음에 정해도 늦지 않아요.",
+        "{Q}에서 손이 필요한 부분은 제가 맡을게요. 어디까지 해도 되는지만 정해 주세요.",
+        "{Q}를 실제로 해 보려면 준비물이 뭐가 필요한지부터 확인할게요."
+      ],
+      follow: [
+        "{P} 말대로면 첫 단계 하나만 정하면 돼요. 그건 제가 바로 시작할 수 있어요.",
+        "{P} 말에 하나 더하면, 오늘 할 것과 이번 주에 할 것을 나눠 두세요."
+      ]
+    },
+    keyring: {
+      lead: [
+        "{Q}는 ① 지금 정할 것 ② 이번 주에 정할 것 ③ 안 정해도 되는 것 — 이렇게 나누면 절반이 사라져요.",
+        "{Q}에서 시간이 걸리는 건 따로 빼 두세요. 남는 것부터 정하면 빨라요.",
+        "{Q}는 할 일을 세 덩어리로만 나눠도 정리가 돼요."
+      ],
+      follow: [
+        "{P} 말까지 모으면 오늘 정할 건 하나로 줄어요.",
+        "{P}가 말한 것 중 마감이 있는 것부터 앞에 두면 뒤가 안 밀려요."
+      ]
+    },
+    muse: {
+      lead: [
+        "{Q}를 3개월 뒤 기준으로 보면 우선순위가 달라져요. 어떤 모습이면 좋을지부터 정해 봐요.",
+        "{Q}는 서두르지 않아도 돼요. 오늘은 방향만 정하고 내일 채워요.",
+        "{Q}에서 제일 재미있는 부분이 뭐예요? 거기서 시작하면 오래 가요."
+      ],
+      follow: [
+        "{P} 말대로 크게 보면 지금 고민이 작아 보여요. 한 칸만 정해요.",
+        "{P} 말에 재미 한 칸을 더하면 훨씬 오래 갈 수 있어요."
+      ]
+    },
+    buoy: {
+      lead: [
+        "{Q}에 선택지가 있다면 셋으로 줄여요. 기준은 시간·돈·재미 세 개면 충분해요.",
+        "{Q}는 두 안을 나란히 놓고 손해가 작은 쪽을 고르면 빨라요.",
+        "{Q}에서 무엇을 제일 중요하게 보는지 알려 주면 비교표를 바로 만들어 드려요."
+      ],
+      follow: [
+        "{P} 말에 비교를 붙이면 남는 쪽이 바로 보여요.",
+        "{P}가 말한 안과 다른 안 하나만 더 놓고 보면 차이가 분명해져요."
+      ]
+    }
+  };
+
+  function questionInfo(text) {
+    var s = String(text || "").trim();
+    if (!s || !isQuestion(s)) return null;
+    var term = questionTerm(s);
+    if (!term) {
+      return { mode:"open", q:quoteSnippet(s), term:"", kind:"concept",
+               check:Q_CHECK.concept, noun:Q_NOUN.concept, gloss:"" };
+    }
+    var kind = termKind(term);
+    return { mode:"define", q:quoteSnippet(s), term:term, kind:kind,
+             check:Q_CHECK[kind] || Q_CHECK.concept, noun:Q_NOUN[kind] || Q_NOUN.concept,
+             gloss:glossaryOf(term) };
+  }
+
+  function fillQuestion(line, info, prevAuthor) {
+    var out = String(line || "");
+    out = out.split("{Q}").join("「" + info.q + "」");
+    out = out.split("{C}").join(info.check);
+    out = out.split("{KIND}").join(info.noun);
+    if (info.term) out = fillToken(out, "{T}", info.term);
+    if (prevAuthor) out = fillPrev(out, prevAuthor);
+    return out;
+  }
+
+  function questionLine(key, info, prevAuthor) {
+    if (!info) return "";
+    var table = info.mode === "define" ? DEFINE_LINES : OPEN_LINES;
+    var pool = table[key] || table.cue;
+    var frames = prevAuthor ? pool.follow : pool.lead;
+    var line = pickVary("q:" + info.mode + ":" + key + (prevAuthor ? ":f" : ":l"), frames);
+    if (!prevAuthor && info.gloss && key === "cue") {
+      return info.gloss + (info.kind === "device"
+        ? " 세대나 스펙은 제조사 페이지에서 확인하는 게 정확해요."
+        : " 자세한 건 공식 문서에서 확인하는 게 정확해요.");
+    }
+    return fillQuestion(line, info, prevAuthor);
+  }
 
   /* ================================================================
      6. 대화 재료 — 주제별 사실 카드 (토론은 이 카드로 문장을 만든다)
@@ -2177,52 +2468,73 @@
     return null;
   }
 
+  function rotateOrder(arr, by) {
+    var a = arr.slice(), n = a.length;
+    if (!n) return a;
+    var k = ((by % n) + n) % n;
+    return a.slice(k).concat(a.slice(0, k));
+  }
+
+  /* 답장 한 줄 — 본문은 배달 직전에 만든다 (Gemini로 만들 수 있으니까) */
   function planReplies(body, target) {
     var topic = detectTopic(body);
+    var info = topic === "general" ? questionInfo(body) : null;
     var keys = mentionKeys(body).filter(function (k) { return k !== "all" && k !== "jihun"; });
     var plan = [];
     var used = {};
     var userQuote = { key:"jihun", name:ME.name, text:quoteSnippet(body) };
 
-    function push(key, text, quote) {
-      if (!AI[key]) return;
-      used[key] = 1;
-      plan.push({ author:key, body:text, quote:quote || null, mode:"chat" });
+    function lineFor(key, prevKey) {
+      if (info) return questionLine(key, info, prevKey);
+      if (!prevKey) return mainLine(key, topic);
+      return followLine(key, topic, prevKey);
     }
-    function quotePrev() {
-      var p = plan[plan.length - 1];
-      return p ? { key:p.author, name:AI[p.author].name, text:quoteSnippet(p.body) } : userQuote;
+
+    function push(key, prevKey, quote, dup) {
+      if (!AI[key]) return;
+      if (dup && used[key]) return;
+      if (dup) used[key] = 1;
+      plan.push({
+        author: key, body: null, mode: "chat", ai: true, topic: topic,
+        quote: quote || "auto",
+        fallback: function () { return lineFor(key, prevKey); }
+      });
     }
 
     /* 1) @멘션 — 지목한 AI가 먼저, 관련 AI가 릴레이 */
     if (keys.length) {
-      keys.slice(0, 2).forEach(function (k) {
-        push(k, mainLine(k, topic), plan.length ? quotePrev() : userQuote);
-      });
+      var first = keys[0];
+      push(first, null, userQuote, true);
+      var second = keys[1];
+      if (second && !used[second]) push(second, first, "auto", true);
       var last = plan[plan.length - 1];
       var helper = relayFor(topic, last.author, used);
-      if (helper && Math.random() < 0.85) push(helper, followLine(helper, topic, last.author), quotePrev());
-      return { topic:topic, plan:plan };
+      if (helper && Math.random() < 0.85) push(helper, last.author, "auto", true);
+      return { topic:topic, info:info, plan:plan };
     }
 
     /* 2) 대상 칩에서 한 AI를 골랐다면 그 AI가 먼저 */
     if (target !== "all" && AI[target]) {
-      push(target, mainLine(target, topic), userQuote);
+      push(target, null, userQuote, true);
       var h = relayFor(topic, target, used);
-      if (h && Math.random() < 0.8) push(h, followLine(h, topic, target), quotePrev());
-      return { topic:topic, plan:plan };
+      if (h && Math.random() < 0.8) push(h, target, "auto", true);
+      return { topic:topic, info:info, plan:plan };
     }
 
-    /* 3) 모두에게 — 주제에 어울리는 2~3명이 차례로, 앞선 AI를 이어받아 */
-    var order = (AFFINITY[topic] || AFFINITY.general).slice();
-    var count = topic === "greet" ? 3 : (Math.random() < 0.5 ? 2 : 3);
-    var lead = (order.length > 1 && Math.random() < 0.3) ? order[1] : order[0];
-    var seq = [lead].concat(order.filter(function (k) { return k !== lead; })).slice(0, count);
-    seq.forEach(function (k, i) {
-      if (i === 0) push(k, mainLine(k, topic), userQuote);
-      else push(k, followLine(k, topic, seq[i - 1]), quotePrev());
-    });
-    return { topic:topic, plan:plan };
+    /* 3) 모두에게 — 설정한 턴 수만큼, 매 라운드 다섯 명이 한 번씩 골고루 */
+    var base = (info ? Q_ORDER : (AFFINITY[topic] || AFFINITY.general)).slice();
+    var n = normTurns(state.turns);
+    if (topic === "greet" && !info) n = Math.min(n, base.length);   // 인사만 30번 하면 이상하니까 한 바퀴
+    var prevKey = null;
+    for (var i = 0; i < n; i++) {
+      var round = Math.floor(i / base.length);
+      var key = rotateOrder(base, round)[i % base.length];
+      (function (k, p, firstTurn) {
+        push(k, p, firstTurn ? userQuote : "auto", false);
+      })(key, prevKey, i === 0);
+      prevKey = key;
+    }
+    return { topic:topic, info:info, plan:plan };
   }
 
   function debateOrder(topic) {
@@ -2239,18 +2551,205 @@
     var bag = newBag();
     var plan = [], prev = null;
     for (var i = 0; i < n; i++) {
-      var key = order[i % order.length];
+      var key = rotateOrder(order, Math.floor(i / order.length))[i % order.length];
       var phase = (i === n - 1) ? "close" : phaseFor(i, n);
       var text = debateText(key, phase, i === 0, subject, pack, bag, prev);
-      plan.push({ author:key, body:text, quote:prev ? quoteFrom(prev) : null, mode:"debate" });
+      plan.push({
+        author:key, body:text, quote:"auto", mode:"debate", ai:true, topic:topic,
+        turn:{ i:i + 1, n:n, phase:phase, subject:subject },
+        fallback:(function (body) { return function () { return body; }; })(text)
+      });
       prev = plan[i];
     }
     return { topic:topic, issue:subject, subject:subject, turns:n, plan:plan };
   }
 
   /* ================================================================
+     7-2. Gemini API — 키를 넣었을 때만 쓰는 진짜 AI 답장
+     키는 localStorage(aicr.gemini_key.v1)에만 있고 코드에는 없다.
+     ================================================================ */
+  function geminiKey() {
+    var k = lsGet(KEY_GEMINI);
+    return k ? String(k).replace(/\s+/g, "") : "";
+  }
+
+  function sleep(ms) {
+    return new Promise(function (res) { setTimeout(res, ms); });
+  }
+
+  function geminiSystem(key) {
+    var a = AI[key] || AI.pickle;
+    var role = {
+      pickle:  "실행 담당이야. 전화·예약·구매·설치처럼 실제로 손이 필요한 일을 맡고, 바로 할 수 있는 행동을 제안해.",
+      keyring: "일정·정리 담당이야. 할 일을 세 덩어리로 나누고 시간과 마감을 붙여 정리해.",
+      cue:     "자료조사·분석 담당이야. 근거와 숫자를 붙이고, 모르는 건 확인 방법까지 알려 줘.",
+      muse:    "장기계획·아이디어 담당이야. 오래 가는 방향과 재미를 챙기고 큰 그림부터 봐.",
+      buoy:    "비교·추천 담당이야. 후보를 셋으로 줄여 가격·성능·평점을 나란히 놓고 골라 줘."
+    }[key] || "";
+    return [
+      "너는 다섯 AI가 함께 있는 채팅방의 '" + a.name + "'이야. " + role,
+      "지금은 " + a.name + " 차례야. 규칙:",
+      "1) 사용자의 질문에 실제로 답해. 모르면 모른다고 말하고 확인 방법을 알려 줘.",
+      "2) 앞선 AI 발언 중 하나를 자연스럽게 이어받아 한 번만 언급해. 같은 말을 반복하지 마.",
+      "3) 1~3문장, 쉬운 한국어로 짧게. 목록 기호(①, -, *)와 마크다운은 쓰지 마.",
+      "4) 사용자를 부를 때는 '지훈 님'이라고 해. 이모지는 꼭 필요할 때만 하나.",
+      "5) 확실하지 않은 숫자·가격·날짜는 지어내지 마."
+    ].join("\n");
+  }
+
+  function geminiHistory(limit) {
+    var list = state.messages.filter(function (m) { return m.kind !== "sys" && m.body; }).slice(-limit);
+    var turns = [];
+    list.forEach(function (m) {
+      var role = m.author === "jihun" ? "user" : "model";
+      var text = (m.author === "jihun" ? "" : "[" + agentOf(m.author).name + "] ") + m.body;
+      var last = turns[turns.length - 1];
+      if (last && last.role === role) last.parts.push({ text:text });
+      else turns.push({ role:role, parts:[{ text:text }] });
+    });
+    if (!turns.length || turns[0].role !== "user") {
+      turns.unshift({ role:"user", parts:[{ text:"(대화 시작)" }] });
+    }
+    return turns;
+  }
+
+  function geminiAsk(item) {
+    var name = AI[item.author] ? AI[item.author].name : "피클";
+    var parts = ["이제 " + name + " 차례야."];
+    if (item.turn) {
+      parts.push("다섯 AI가 주제 하나로 이어서 이야기하는 중이야 (" + item.turn.i + "/" + item.turn.n + "턴).");
+      parts.push(item.turn.phase === "close"
+        ? "마지막 턴이니까 지금까지 나온 걸 셋으로 정리해."
+        : "앞사람 말을 한 번 언급하고, 다음 사람이 이어 말할 수 있게 끝내.");
+    } else {
+      parts.push("사용자 질문에 1~3문장으로 답해.");
+      parts.push("앞선 AI 발언이 있으면 하나를 짚고 네 담당 범위에서 한 가지만 더해.");
+    }
+    return parts.join(" ");
+  }
+
+  function geminiContents(item) {
+    var turns = geminiHistory(14);
+    var ask = geminiAsk(item);
+    var last = turns[turns.length - 1];
+    if (last.role === "user") last.parts.push({ text:ask });
+    else turns.push({ role:"user", parts:[{ text:ask }] });
+    return turns;
+  }
+
+  var GEMINI_MAX = 320;
+  function tidyAi(text) {
+    var s = String(text || "");
+    s = s.replace(/```[\s\S]*?```/g, " ");
+    s = s.replace(/^\s*\[[^\]]{1,10}\]\s*/, "");
+    s = s.replace(/[*_`#>]/g, "").replace(/\s*\n\s*/g, " ").replace(/\s{2,}/g, " ").trim();
+    s = s.replace(/^[가-힣A-Za-z]{1,6}\s*:\s*/, "");
+    if (s.length > GEMINI_MAX) {
+      var cut = s.slice(0, GEMINI_MAX);
+      var m = cut.match(/^[\s\S]*[.!?…]/);
+      s = m ? m[0] : cut.replace(/\s+\S*$/, "") + "…";
+    }
+    return s;
+  }
+
+  function geminiModel() { return GEMINI_MODELS[Math.min(state.modelIdx, GEMINI_MODELS.length - 1)]; }
+  function geminiUrl() { return GEMINI_BASE + geminiModel() + ":generateContent"; }
+
+  function geminiCall(item) {
+    var key = geminiKey();
+    if (!key) { var e0 = new Error("key"); e0.code = "nokey"; return Promise.reject(e0); }
+    var payload = JSON.stringify({
+      systemInstruction: { parts:[{ text: geminiSystem(item.author) }] },
+      contents: geminiContents(item),
+      generationConfig: { temperature:0.9, topP:0.95, maxOutputTokens:300 }
+    });
+    var opts = { method:"POST", headers:{ "Content-Type":"application/json" }, body:payload };
+    var ctrl = null, timer = null;
+    try {
+      if (window.AbortController) { ctrl = new AbortController(); opts.signal = ctrl.signal; }
+    } catch (e) { ctrl = null; }
+    if (ctrl) timer = setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, API_TIMEOUT);
+
+    return fetch(geminiUrl() + "?key=" + encodeURIComponent(key), opts).then(function (res) {
+      if (timer) clearTimeout(timer);
+      return res.text().then(function (raw) {
+        var data = null;
+        try { data = JSON.parse(raw); } catch (e) { data = null; }
+        if (!res.ok) {
+          var msg = data && data.error && data.error.message ? data.error.message : ("HTTP " + res.status);
+          var err = new Error(msg); err.code = res.status; throw err;
+        }
+        var cand = data && data.candidates && data.candidates[0];
+        var parts = cand && cand.content && cand.content.parts ? cand.content.parts : null;
+        var out = parts ? parts.map(function (p) { return p.text || ""; }).join("") : "";
+        out = tidyAi(out);
+        if (!out) { var e2 = new Error("빈 응답"); e2.code = "empty"; throw e2; }
+        return out;
+      });
+    }, function (err) {
+      if (timer) clearTimeout(timer);
+      var e3 = new Error(err && err.message ? err.message : "network"); e3.code = "network"; throw e3;
+    });
+  }
+
+  /* 모델이 없다면(404) 다음 모델로, 일시 오류면 한 번 다시 — 그래도 안 되면 기본 엔진 */
+  function geminiRequest(item, retries) {
+    return geminiCall(item).catch(function (err) {
+      var code = err && err.code ? err.code : 0;
+      if (code === 404 && state.modelIdx < GEMINI_MODELS.length - 1) {
+        state.modelIdx++;
+        return geminiRequest(item, retries);
+      }
+      if (retries > 0 && (code === 429 || code === 503 || code === "network")) {
+        return sleep(2500).then(function () { return geminiRequest(item, retries - 1); });
+      }
+      throw err;
+    });
+  }
+
+  /* 무료 한도(분당 요청 수)를 넘지 않게 최소 간격을 둔다 */
+  function geminiTurn(item) {
+    var waitMs = Math.max(0, (state.nextApiAt || 0) - Date.now());
+    return sleep(waitMs).then(function () {
+      state.nextApiAt = Date.now() + API_GAP;
+      return geminiRequest(item, 1);
+    });
+  }
+
+  function geminiFailed(err) {
+    var code = err && err.code ? err.code : 0;
+    if (code === 429) {
+      state.nextApiAt = Date.now() + 20000;
+      if (!state.aiWarned) { toast("Gemini 사용량이 잠깐 찼어요 · 기본 모드로 답할게요"); state.aiWarned = true; }
+      return;
+    }
+    if (code === 404) {
+      state.aiOff = true;
+      if (!state.aiWarned) { toast("쓸 수 있는 Gemini 모델을 찾지 못했어요 · 기본 모드로 답할게요"); state.aiWarned = true; }
+      renderGemini();
+      return;
+    }
+    if (code === 400 || code === 401 || code === 403) {
+      state.aiOff = true;
+      if (!state.aiWarned) { toast("Gemini API 키를 확인해 주세요 · 기본 모드로 답할게요"); state.aiWarned = true; }
+      renderGemini();
+      return;
+    }
+    if (!state.aiWarned) { toast("Gemini 연결이 안 돼 기본 모드로 답할게요"); state.aiWarned = true; }
+  }
+
+  /* ================================================================
      8. 대화 큐
      ================================================================ */
+  function autoQuote() {
+    for (var i = state.messages.length - 1; i >= 0; i--) {
+      var m = state.messages[i];
+      if (m.kind === "sys" || !m.body) continue;
+      return { key:m.author, name:agentOf(m.author).name, text:quoteSnippet(m.body) };
+    }
+    return null;
+  }
+
   function enqueue(list) {
     if (!list || !list.length) { finishQueue(); return; }
     for (var i = 0; i < list.length; i++) state.queue.push(list[i]);
@@ -2258,7 +2757,7 @@
   }
 
   function pump() {
-    if (state.timer) return;
+    if (state.timer || state.waiting) return;
     if (!state.queue.length) { finishQueue(); return; }
     var item = state.queue[0];
     state.typing = item.author;
@@ -2270,35 +2769,55 @@
     var wait = base[0] + Math.floor(Math.random() * (base[1] - base[0]));
     state.timer = setTimeout(function () {
       state.timer = null;
-      var it = state.queue.shift();
-      if (!it) return;
-      state.messages.push(norm({
-        id:newId(), author:it.author, body:it.body, quote:it.quote,
-        kind:"reply", target:"all", mode:it.mode, ts:Date.now()
-      }));
-      if (state.debate.active) state.debate.done++;
-      state.savedAt = Date.now();
-      saveMessages();
-      state.typing = state.queue.length ? state.queue[0].author : null;
-      renderThread({ scroll:"bottom", smooth:true });
-      renderStatus();
-      renderStrip();
-      renderDebateBar();
-      renderSettings();
-      if (state.queue.length) pump();
-      else finishQueue();
+      var it = state.queue[0];
+      if (!it) { finishQueue(); return; }
+      if (it.ai && !state.aiOff && geminiKey()) {
+        state.waiting = true;
+        geminiTurn(it).then(function (text) {
+          state.waiting = false;
+          deliver(it, text);
+        }, function (err) {
+          state.waiting = false;
+          geminiFailed(err);
+          deliver(it, null);
+        });
+        return;
+      }
+      deliver(it, null);
     }, wait);
+  }
+
+  function deliver(item, aiText) {
+    if (!state.queue.length || state.queue[0] !== item) return;   // 정지·새 질문으로 취소됨
+    state.queue.shift();
+    var body = aiText || item.body || (item.fallback ? item.fallback() : "");
+    var quote = item.quote && item.quote !== "auto" ? item.quote : autoQuote();
+    state.messages.push(norm({
+      id:newId(), author:item.author, body:body, quote:quote,
+      kind:"reply", target:"all", mode:item.mode, ts:Date.now()
+    }));
+    if (state.debate.active) state.debate.done++;
+    state.savedAt = Date.now();
+    saveMessages();
+    state.typing = state.queue.length ? state.queue[0].author : null;
+    renderThread({ scroll:"bottom", smooth:true });
+    renderStatus();
+    renderStrip();
+    renderDebateBar();
+    renderSettings();
+    if (state.queue.length) pump();
+    else finishQueue();
   }
 
   function finishQueue() {
     state.typing = null;
     if (state.debate.active) {
-      var d = state.debate;
+      var d = state.debate, chat = d.kind === "chat";
       if (d.done > 0) {
-        addSys("AI끼리 대화를 마쳤어요 · " + d.done + "턴");
-        toast("AI끼리 대화 " + d.done + "턴을 마쳤어요");
+        addSys(chat ? "다섯 AI가 " + d.done + "턴 답했어요" : "AI끼리 대화를 마쳤어요 · " + d.done + "턴");
+        toast(chat ? "답장 " + d.done + "턴을 마쳤어요" : "AI끼리 대화 " + d.done + "턴을 마쳤어요");
       }
-      state.debate = { active:false, issue:"", total:0, done:0 };
+      state.debate = { active:false, kind:"", issue:"", total:0, done:0 };
     }
     renderStatus();
     renderStrip();
@@ -2309,14 +2828,20 @@
   }
 
   function stopReplies(silent) {
+    state.gen++;
+    state.waiting = false;
     if (state.timer) { clearTimeout(state.timer); state.timer = null; }
     state.queue.length = 0;
     state.typing = null;
     if (state.debate.active) {
       var d = state.debate;
-      state.debate = { active:false, issue:"", total:0, done:0 };
+      state.debate = { active:false, kind:"", issue:"", total:0, done:0 };
       if (!silent) {
-        if (d.done > 0) addSys("AI끼리 대화를 멈췄어요 · " + d.done + "턴에서");
+        if (d.done > 0) {
+          addSys(d.kind === "chat"
+            ? "답장을 멈췄어요 · " + d.done + "/" + d.total + "턴에서"
+            : "AI끼리 대화를 멈췄어요 · " + d.done + "턴에서");
+        }
         toast("멈췄어요");
       }
     }
@@ -2481,12 +3006,52 @@
     var n = state.messages.filter(function (m) { return m.kind !== "sys"; }).length;
     var c = $("store-count"); if (c) c.textContent = n + "개";
     var t = $("store-turns"); if (t) t.textContent = state.turns + "턴";
+    var tb = $("turns-badge"); if (tb) tb.textContent = "지금 " + state.turns + "턴";
     var d = $("store-detail");
     if (d) {
       d.textContent = state.savedAt
         ? "마지막 저장 " + fmtTime(state.savedAt) + " · 새로고침해도 그대로 남아요."
         : "새로고침해도 대화가 그대로 남아요.";
     }
+    renderGemini();
+  }
+
+  /* Gemini 키 카드 — 상태 배지만 바꾸고, 입력값은 건드리지 않는다 */
+  function renderGemini() {
+    var on = !!geminiKey();
+    var badge = $("gemini-badge"), st = $("gemini-state"), input = $("gemini-key"), hint = $("gemini-hint");
+    if (badge) badge.className = "state-badge" + (on ? "" : " off");
+    if (st) st.textContent = on ? "연결됨" : "미설정 · 기본 모드";
+    if (input) input.placeholder = on ? "저장된 키가 있어요 · 바꾸려면 새 키 입력" : "AIza... 로 시작하는 키";
+    if (hint) {
+      hint.innerHTML = on
+        ? "키는 이 브라우저 localStorage에만 저장돼요 · 모델 <b>" + geminiModel() + "</b> · <b>초기화</b>를 누르면 키가 지워져요."
+        : "키가 없으면 기본 엔진으로 답해요. 발급은 <b>aistudio.google.com/app/apikey</b> 에서 할 수 있어요.";
+    }
+  }
+
+  function saveGeminiKey() {
+    var input = $("gemini-key");
+    if (!input) return;
+    var v = String(input.value || "").trim().replace(/\s+/g, "");
+    if (!v) { toast("키를 먼저 붙여 넣어 주세요"); if (input.focus) input.focus(); return; }
+    if (v.length < 20) { toast("키가 너무 짧아요 · 붙여 넣은 내용을 확인해 주세요"); if (input.focus) input.focus(); return; }
+    if (!lsSet(KEY_GEMINI, v)) { toast("저장하지 못했어요 · 브라우저 저장 공간을 확인해 주세요"); return; }
+    input.value = "";
+    state.aiOff = false;
+    state.aiWarned = false;
+    renderGemini();
+    toast("Gemini API 키를 저장했어요 · 이제 실제 AI로 답해요");
+  }
+
+  function clearGeminiKey() {
+    var input = $("gemini-key");
+    lsDel(KEY_GEMINI);
+    if (input) input.value = "";
+    state.aiOff = false;
+    state.aiWarned = false;
+    renderGemini();
+    toast("키를 지웠어요 · 기본 모드로 답해요");
   }
 
   function renderTheme() {
@@ -2514,7 +3079,8 @@
     if (!box || !txt) return;
     if (state.debate.active) {
       box.className = "room-status busy";
-      txt.textContent = "AI끼리 대화 중 · " + state.debate.done + "/" + state.debate.total;
+      txt.textContent = (state.debate.kind === "chat" ? "답장 이어가는 중" : "AI끼리 대화 중") +
+        " · " + state.debate.done + "/" + state.debate.total;
       return;
     }
     if (state.typing && AI[state.typing]) {
@@ -2524,7 +3090,7 @@
       return;
     }
     box.className = "room-status";
-    txt.textContent = "5 AI가 대기 중";
+    txt.textContent = (geminiKey() ? "5 AI 연결됨 · 대기 중" : "5 AI가 대기 중");
   }
 
   function renderDebateBar() {
@@ -2535,7 +3101,11 @@
     var t = $("debate-turn");
     if (t) t.textContent = state.debate.done + "/" + state.debate.total;
     var l = $("debate-label");
-    if (l) l.textContent = state.debate.active && state.debate.issue ? "AI끼리 대화 중 · " + state.debate.issue : "AI끼리 대화 중";
+    if (l) {
+      if (!on) l.textContent = "AI끼리 대화 중";
+      else if (state.debate.kind === "chat") l.textContent = "다섯 AI가 이어서 답하는 중";
+      else l.textContent = state.debate.issue ? "AI끼리 대화 중 · " + state.debate.issue : "AI끼리 대화 중";
+    }
   }
 
   function renderJump() {
@@ -2719,6 +3289,8 @@
       return;
     }
     if (state.debate.active) stopReplies(true);
+    state.aiWarned = false;
+    state.aiOff = false;
     addUserMessage(text);
     input.value = "";
     autoGrow(input);
@@ -2727,15 +3299,20 @@
     renderSettings();
 
     var planned = planReplies(text, state.target);
-    if (planned.plan.length) {
+    if (!planned.plan.length) { toast("답장할 AI를 찾지 못했어요"); return; }
+
+    if (planned.plan.length > 1) {
+      state.debate = { active:true, kind:"chat", issue:"", total:planned.plan.length, done:0 };
+      renderStatus();
+      renderDebateBar();
       enqueue(planned.plan);
-      var first = AI[planned.plan[0].author];
-      toast(planned.plan.length > 1
-        ? first.name + " 외 " + (planned.plan.length - 1) + "명이 답장을 준비해요"
-        : first.name + josa(first.name, "이", "가") + " 답장을 준비해요");
-    } else {
-      toast("답장할 AI를 찾지 못했어요");
+      toast("다섯 AI가 " + planned.plan.length + "턴 이어서 답해요 · 정지로 멈출 수 있어요");
+      return;
     }
+
+    enqueue(planned.plan);
+    var first = AI[planned.plan[0].author];
+    toast(first.name + josa(first.name, "이", "가") + " 답장을 준비해요");
   }
 
   function openSheet() {
@@ -2797,7 +3374,7 @@
     closeSheet();
     stopReplies(true);
     var planned = planDebate(theme, state.turns);
-    state.debate = { active:true, issue:planned.issue, total:planned.plan.length, done:0 };
+    state.debate = { active:true, kind:"debate", issue:planned.issue, total:planned.plan.length, done:0 };
     state.pinned = true;
     setTab("chat");
     addSys("AI끼리 대화를 시작했어요 · 주제: " + (theme.length > 44 ? theme.slice(0, 44) + "…" : theme));
@@ -2950,6 +3527,8 @@
     if (act === "turns") { state.turns = normTurns(el.getAttribute("data-value")); lsSet(KEY_TURNS, state.turns); renderTurns(); renderSettings(); return; }
     if (act === "start-debate") { startDebate(); return; }
     if (act === "stop") { stopReplies(false); return; }
+    if (act === "save-key") { saveGeminiKey(); return; }
+    if (act === "clear-key") { clearGeminiKey(); return; }
     if (act === "theme") { applyTheme(el.getAttribute("data-value")); return; }
     if (act === "theme-toggle") { toggleTheme(); return; }
     if (act === "jump") { scrollBottom(true); return; }
@@ -2971,6 +3550,10 @@
     if (e.target && e.target.id === "sheet-input" && e.key === "Enter") {
       e.preventDefault();
       startDebate();
+    }
+    if (e.target && e.target.id === "gemini-key" && e.key === "Enter") {
+      e.preventDefault();
+      saveGeminiKey();
     }
   });
 
@@ -3022,7 +3605,7 @@
      14. 테스트용 노출 (읽기 전용 API)
      ================================================================ */
   window.__AIROOM__ = {
-    version: "4.0",
+    version: "4.1",
     AI: AI, ORDER: ORDER, ME: ME, TARGETS: TARGETS,
     TOPICS: TOPICS, TOPIC_ISSUE: TOPIC_ISSUE,
     LINES: LINES, FOLLOW: FOLLOW, DEBATE: DEBATE,
@@ -3036,6 +3619,14 @@
     quoteSnippet: quoteSnippet,
     planReplies: planReplies,
     planDebate: planDebate,
+    isQuestion: isQuestion,
+    questionTerm: questionTerm,
+    questionInfo: questionInfo,
+    questionLine: questionLine,
+    rotateOrder: rotateOrder,
+    geminiModel: geminiModel,
+    geminiModels: GEMINI_MODELS,
+    hasGeminiKey: function () { return !!geminiKey(); },
     state: state
   };
 })();
