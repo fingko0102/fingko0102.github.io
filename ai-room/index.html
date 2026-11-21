@@ -1613,7 +1613,10 @@
     for (var pass = 0; pass < 3; pass++) {
       var changed = false;
       for (var i = 0; i < Q_STRIP.length; i++) {
-        if (Q_STRIP[i].test(out)) { out = out.replace(Q_STRIP[i], ""); hit = true; changed = true; }
+        if (Q_STRIP[i].test(out)) {
+          out = out.replace(Q_STRIP[i], "").replace(/\s+$/, "");   // 끝 공백까지 지워야 다음 패턴이 붙는다
+          hit = true; changed = true;
+        }
       }
       if (!changed) break;
     }
@@ -1654,6 +1657,7 @@
     { k:["api"], t:"API는 프로그램끼리 정해진 방식으로 부탁하고 답을 받는 약속이에요. 날씨 앱이 기상 자료를 받아올 때 뒤에서 API를 불러요." },
     { k:["3d프린터","3d 프린터","삼디프린터"], t:"3D 프린터는 플라스틱 실을 녹여 층층이 쌓아 물건을 만드는 기계예요. 필라멘트·노즐·베드, 이 세 낱말만 알면 시작할 수 있어요." },
     { k:["서보모터","서보"], t:"서보모터는 '몇 도로 돌아라'처럼 각도를 정해 주면 그 위치로 움직이는 모터예요. 로봇 관절에 많이 써요." },
+    { k:["로봇","robot"], t:"로봇은 센서로 주변을 읽고 모터로 몸을 움직이는 기계예요. 무엇을 대신할지 정하면 필요한 센서·모터가 바로 좁혀져요." },
     { k:["라즈베리파이","라즈베리 파이"], t:"라즈베리파이는 손바닥만 한 리눅스 컴퓨터예요. GPIO 핀에 센서와 모터를 붙여 만들 때 많이 써요." },
     { k:["아두이노"], t:"아두이노는 센서와 모터를 붙여 쓰는 작은 보드예요. 코드를 올려 두면 전원이 들어와 있는 동안 계속 같은 동작을 해요." },
     { k:["양자컴퓨터","양자 컴퓨터"], t:"양자컴퓨터는 0과 1을 동시에 담는 큐비트로 계산하는 컴퓨터예요. 특정 계산만 아주 빠르고, 아직은 연구 단계가 많아요." }
@@ -1807,8 +1811,8 @@
   function fillQuestion(line, info, prevAuthor) {
     var out = String(line || "");
     out = out.split("{Q}").join("「" + info.q + "」");
-    out = out.split("{C}").join(info.check);
-    out = out.split("{KIND}").join(info.noun);
+    out = fillToken(out, "{C}", info.check);
+    out = fillToken(out, "{KIND}", info.noun);
     if (info.term) out = fillToken(out, "{T}", info.term);
     if (prevAuthor) out = fillPrev(out, prevAuthor);
     return out;
@@ -2478,7 +2482,13 @@
   /* 답장 한 줄 — 본문은 배달 직전에 만든다 (Gemini로 만들 수 있으니까) */
   function planReplies(body, target) {
     var topic = detectTopic(body);
-    var info = topic === "general" ? questionInfo(body) : null;
+    var info = questionInfo(body);
+    if (info && topic !== "general") {
+      /* 주제가 잡혀도 '무엇인지'를 묻는 질문은 정의 답변이 맞다 (예: 로봇이란?, 3D 프린터 원리 알려줘).
+         다만 "지난주에 본 영화 뭐야?" 같은 경험 질문은 주제 답변으로 보낸다. */
+      var defish = /(?:이란|란|이라는|라는)\s*[?.!~]*\s*$/.test(String(body).trim()) || !!info.gloss;
+      if (!(defish && info.mode === "define" && info.term && info.term.length <= 16)) info = null;
+    }
     var keys = mentionKeys(body).filter(function (k) { return k !== "all" && k !== "jihun"; });
     var plan = [];
     var used = {};
