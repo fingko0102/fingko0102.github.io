@@ -899,22 +899,29 @@
 
   /* ---------- 캔버스 아트: 금빛 글씨 + 산타 썰매 + 루돌프 ---------- */
   function paintSantaArt(c, W, H) {
-    /* 1. Merry Christmas */
+    /* ---------- 1. Merry Christmas (금빛 세리프 이탤릭) ---------- */
     const text = 'Merry Christmas';
+    const FAM = 'Georgia, "Times New Roman", "Nanum Myeongjo", serif';
     c.save();
     c.textAlign = 'center';
     c.textBaseline = 'middle';
-    c.font = 'italic 700 152px Georgia, "Times New Roman", "Nanum Myeongjo", serif';
-    const tx = W / 2 + 6, ty = 148;
+    let fs = 150;
+    c.font = 'italic 700 ' + fs + 'px ' + FAM;
+    const tw0 = c.measureText(text).width;
+    if (tw0 > 1245) {
+      fs = Math.floor(fs * 1245 / tw0);
+      c.font = 'italic 700 ' + fs + 'px ' + FAM;
+    }
+    const tx = W / 2, ty = 152;
 
     c.save();
     c.shadowColor = 'rgba(255,205,110,.85)';
-    c.shadowBlur = 42;
-    c.fillStyle = 'rgba(255,214,130,.55)';
+    c.shadowBlur = 40;
+    c.fillStyle = 'rgba(255,214,130,.50)';
     c.fillText(text, tx, ty);
     c.restore();
 
-    const grad = c.createLinearGradient(0, ty - 80, 0, ty + 80);
+    const grad = c.createLinearGradient(0, ty - fs * 0.55, 0, ty + fs * 0.55);
     grad.addColorStop(0.00, '#fffbe8');
     grad.addColorStop(0.22, '#ffe9a8');
     grad.addColorStop(0.46, '#f3c25c');
@@ -924,241 +931,272 @@
     c.fillStyle = grad;
     c.fillText(text, tx, ty);
 
+    // 글자 위에만 반짝이
     c.save();
     c.globalCompositeOperation = 'source-atop';
-    for (let i = 0; i < 110; i++) {
-      const x = tx + (Math.random() * 2 - 1) * 655;
-      const y = ty + (Math.random() * 2 - 1) * 74;
-      const r = Math.random() * 1.8 + 0.5;
-      c.fillStyle = 'rgba(255,252,235,' + (0.30 + Math.random() * 0.55).toFixed(2) + ')';
+    for (let i = 0; i < 150; i++) {
+      const x = tx + (Math.random() * 2 - 1) * 640;
+      const y = ty + (Math.random() * 2 - 1) * fs * 0.52;
+      const r = Math.random() * 1.9 + 0.5;
+      c.fillStyle = 'rgba(255,253,240,' + (0.35 + Math.random() * 0.6).toFixed(2) + ')';
       c.beginPath(); c.arc(x, y, r, 0, PI2); c.fill();
     }
     c.restore();
     c.restore();
 
-    /* 2. 썰매 */
-    const body = new Path2D();
-    body.moveTo(292, 512);
-    body.bezierCurveTo(238, 534, 224, 588, 250, 620);
-    body.bezierCurveTo(300, 668, 566, 672, 664, 612);
-    body.bezierCurveTo(722, 578, 734, 540, 700, 502);
-    body.bezierCurveTo(676, 476, 632, 472, 604, 488);
-    body.bezierCurveTo(548, 512, 470, 518, 408, 510);
-    body.bezierCurveTo(360, 504, 320, 500, 292, 512);
-    body.closePath();
-
-    const sg = c.createLinearGradient(0, 500, 0, 670);
-    sg.addColorStop(0, '#e8354a');
-    sg.addColorStop(0.4, '#c2152c');
-    sg.addColorStop(1, '#6d0a16');
+    /* ---------- 2. 썰매 (뒤쪽 높은 등받이 + 앞쪽 말린 코) ---------- */
+    const sleigh = new Path2D();
+    sleigh.moveTo(258, 462);
+    sleigh.bezierCurveTo(216, 498, 210, 566, 246, 612);
+    sleigh.bezierCurveTo(272, 646, 470, 660, 596, 650);
+    sleigh.bezierCurveTo(652, 644, 676, 626, 684, 596);
+    sleigh.bezierCurveTo(700, 548, 692, 500, 668, 476);
+    sleigh.bezierCurveTo(648, 458, 616, 468, 604, 490);
+    sleigh.bezierCurveTo(560, 512, 470, 506, 380, 494);
+    sleigh.bezierCurveTo(330, 487, 288, 452, 258, 462);
+    sleigh.closePath();
+    const sg = c.createLinearGradient(0, 470, 0, 660);
+    sg.addColorStop(0, '#ec3a4e');
+    sg.addColorStop(0.38, '#c2152c');
+    sg.addColorStop(1, '#64080f');
     c.fillStyle = sg;
-    c.fill(body);
+    c.fill(sleigh);
 
+    // 금빛 테두리(윗선)
     c.save();
     c.strokeStyle = 'rgba(255,214,126,.95)';
-    c.lineWidth = 7;
+    c.lineWidth = 6;
     c.shadowColor = 'rgba(255,190,90,.9)';
-    c.shadowBlur = 16;
+    c.shadowBlur = 14;
     c.beginPath();
-    c.moveTo(300, 514);
-    c.bezierCurveTo(352, 500, 420, 508, 470, 514);
-    c.bezierCurveTo(544, 522, 606, 512, 646, 484);
+    c.moveTo(266, 466);
+    c.bezierCurveTo(330, 492, 392, 502, 462, 500);
+    c.bezierCurveTo(542, 498, 596, 500, 636, 484);
     c.stroke();
     c.restore();
 
+    // 옆면 소용돌이 장식
     c.save();
-    c.strokeStyle = 'rgba(255,206,120,.85)';
+    c.strokeStyle = 'rgba(255,206,120,.8)';
     c.lineWidth = 5;
-    c.beginPath(); c.moveTo(320, 590); c.bezierCurveTo(360, 640, 470, 646, 520, 602); c.stroke();
-    c.beginPath(); c.moveTo(556, 600); c.bezierCurveTo(600, 616, 650, 606, 668, 580); c.stroke();
+    c.beginPath(); c.moveTo(300, 566); c.bezierCurveTo(340, 626, 470, 636, 528, 592); c.stroke();
+    c.beginPath(); c.moveTo(560, 596); c.bezierCurveTo(606, 612, 648, 598, 664, 570); c.stroke();
     c.restore();
 
+    // 러너(스케이트 날)
     c.save();
     c.strokeStyle = '#f4cf72';
     c.lineWidth = 9;
     c.lineCap = 'round';
     c.shadowColor = 'rgba(255,196,96,.85)';
     c.shadowBlur = 14;
-    c.beginPath(); c.moveTo(246, 700); c.bezierCurveTo(228, 690, 226, 668, 244, 656); c.stroke();
-    c.beginPath(); c.moveTo(250, 718); c.lineTo(640, 712); c.bezierCurveTo(690, 710, 712, 726, 706, 762); c.stroke();
+    c.beginPath(); c.moveTo(238, 690); c.bezierCurveTo(214, 682, 212, 656, 236, 644); c.stroke();
+    c.beginPath(); c.moveTo(244, 716); c.lineTo(628, 712);
+    c.bezierCurveTo(686, 710, 712, 726, 706, 764); c.stroke();
     c.restore();
 
+    // 버팀대
     c.save();
-    c.strokeStyle = 'rgba(226,178,84,.95)';
+    c.strokeStyle = 'rgba(226,178,84,.9)';
     c.lineWidth = 6;
-    c.beginPath(); c.moveTo(330, 650); c.lineTo(336, 714); c.stroke();
-    c.beginPath(); c.moveTo(560, 646); c.lineTo(566, 712); c.stroke();
+    c.beginPath(); c.moveTo(330, 634); c.lineTo(334, 712); c.stroke();
+    c.beginPath(); c.moveTo(566, 638); c.lineTo(568, 711); c.stroke();
     c.restore();
 
-    /* 3. 선물 자루 + 곰인형 */
-    const bagG = c.createRadialGradient(300, 470, 8, 300, 500, 80);
-    bagG.addColorStop(0, '#e2a86a');
-    bagG.addColorStop(0.65, '#a86b34');
+    /* ---------- 3. 선물 자루 + 곰인형 ---------- */
+    const bagG = c.createRadialGradient(324, 486, 8, 324, 512, 78);
+    bagG.addColorStop(0, '#e6ad6d');
+    bagG.addColorStop(0.62, '#a86b34');
     bagG.addColorStop(1, '#5d3417');
     c.fillStyle = bagG;
-    c.beginPath(); c.ellipse(300, 486, 74, 62, -0.15, 0, PI2); c.fill();
+    c.beginPath(); c.ellipse(324, 500, 70, 58, -0.15, 0, PI2); c.fill();
     c.fillStyle = '#8d5526';
-    c.beginPath(); c.ellipse(322, 432, 26, 18, -0.3, 0, PI2); c.fill();
+    c.beginPath(); c.ellipse(346, 450, 24, 17, -0.3, 0, PI2); c.fill();
     c.strokeStyle = '#2fa04a';
     c.lineWidth = 8;
-    c.beginPath(); c.ellipse(320, 437, 26, 11, -0.3, 0, PI2); c.stroke();
+    c.beginPath(); c.ellipse(344, 455, 24, 10, -0.3, 0, PI2); c.stroke();
 
     c.fillStyle = '#b07a45';
-    c.beginPath(); c.arc(300, 415, 22, 0, PI2); c.fill();
-    c.beginPath(); c.arc(284, 396, 9, 0, PI2); c.fill();
-    c.beginPath(); c.arc(316, 394, 9, 0, PI2); c.fill();
+    c.beginPath(); c.arc(322, 432, 20, 0, PI2); c.fill();
+    c.beginPath(); c.arc(306, 414, 8, 0, PI2); c.fill();
+    c.beginPath(); c.arc(338, 412, 8, 0, PI2); c.fill();
     c.fillStyle = '#8a5a2e';
-    c.beginPath(); c.ellipse(300, 421, 10, 8, 0, 0, PI2); c.fill();
+    c.beginPath(); c.ellipse(322, 438, 9, 7, 0, 0, PI2); c.fill();
     c.fillStyle = '#2a1a0e';
-    c.beginPath(); c.arc(292, 410, 3, 0, PI2); c.fill();
-    c.beginPath(); c.arc(308, 410, 3, 0, PI2); c.fill();
+    c.beginPath(); c.arc(315, 428, 2.6, 0, PI2); c.fill();
+    c.beginPath(); c.arc(329, 428, 2.6, 0, PI2); c.fill();
 
-    /* 4. 산타 */
-    const coatG = c.createLinearGradient(400, 470, 560, 620);
-    coatG.addColorStop(0, '#f0455a');
+    /* ---------- 4. 산타 ---------- */
+    // 몸통
+    const coatG = c.createLinearGradient(400, 470, 556, 626);
+    coatG.addColorStop(0, '#f24a5e');
     coatG.addColorStop(0.55, '#c81630');
     coatG.addColorStop(1, '#790c18');
     c.fillStyle = coatG;
-    c.beginPath(); c.ellipse(468, 556, 82, 92, -0.06, 0, PI2); c.fill();
+    c.beginPath(); c.ellipse(464, 560, 76, 88, -0.05, 0, PI2); c.fill();
 
-    c.strokeStyle = '#c81630';
-    c.lineWidth = 44;
-    c.lineCap = 'round';
-    c.beginPath(); c.moveTo(520, 540); c.quadraticCurveTo(570, 512, 610, 512); c.stroke();
-    c.fillStyle = '#f2f2f6';
-    c.beginPath(); c.arc(614, 510, 22, 0, PI2); c.fill();
-
+    // 벨트
     c.fillStyle = '#22202c';
-    c.fillRect(388, 592, 162, 26);
+    c.fillRect(388, 596, 154, 24);
     c.fillStyle = '#f3c95c';
-    c.fillRect(456, 590, 34, 30);
+    c.fillRect(452, 594, 32, 28);
     c.fillStyle = '#22202c';
-    c.fillRect(464, 598, 18, 14);
+    c.fillRect(460, 602, 16, 12);
 
+    // 오른팔 + 장갑
+    c.save();
+    c.strokeStyle = '#c81630';
+    c.lineWidth = 30;
+    c.lineCap = 'round';
+    c.beginPath(); c.moveTo(516, 552); c.quadraticCurveTo(558, 530, 592, 524); c.stroke();
+    c.fillStyle = '#eef1f8';
+    c.beginPath(); c.arc(600, 522, 15, 0, PI2); c.fill();
+    c.restore();
+
+    // 얼굴
     c.fillStyle = '#f6c9a2';
-    c.beginPath(); c.arc(462, 432, 40, 0, PI2); c.fill();
-    c.fillStyle = 'rgba(226,120,110,.55)';
-    c.beginPath(); c.arc(436, 448, 13, 0, PI2); c.fill();
-    c.beginPath(); c.arc(488, 448, 13, 0, PI2); c.fill();
+    c.beginPath(); c.arc(460, 432, 39, 0, PI2); c.fill();
+    c.fillStyle = 'rgba(226,120,110,.5)';
+    c.beginPath(); c.arc(435, 447, 12, 0, PI2); c.fill();
+    c.beginPath(); c.arc(485, 447, 12, 0, PI2); c.fill();
 
-    const beardG = c.createRadialGradient(462, 470, 10, 462, 486, 74);
+    // 수염
+    const beardG = c.createRadialGradient(460, 470, 8, 460, 486, 72);
     beardG.addColorStop(0, '#ffffff');
     beardG.addColorStop(0.7, '#e8eef8');
-    beardG.addColorStop(1, '#b9c6da');
+    beardG.addColorStop(1, '#c2cee0');
     c.fillStyle = beardG;
     c.beginPath();
-    c.moveTo(420, 452);
-    c.bezierCurveTo(404, 500, 416, 552, 462, 556);
-    c.bezierCurveTo(508, 552, 522, 500, 504, 452);
-    c.bezierCurveTo(488, 470, 436, 470, 420, 452);
+    c.moveTo(420, 450);
+    c.bezierCurveTo(404, 496, 416, 548, 460, 552);
+    c.bezierCurveTo(504, 548, 518, 496, 500, 450);
+    c.bezierCurveTo(486, 468, 434, 468, 420, 450);
     c.closePath();
     c.fill();
 
     c.fillStyle = '#f2f5fb';
-    c.beginPath(); c.ellipse(462, 456, 26, 11, 0, 0, PI2); c.fill();
+    c.beginPath(); c.ellipse(460, 456, 25, 10, 0, 0, PI2); c.fill();
 
     c.fillStyle = '#2b2230';
-    c.beginPath(); c.arc(449, 430, 4.2, 0, PI2); c.fill();
-    c.beginPath(); c.arc(476, 430, 4.2, 0, PI2); c.fill();
+    c.beginPath(); c.arc(447, 429, 4, 0, PI2); c.fill();
+    c.beginPath(); c.arc(474, 429, 4, 0, PI2); c.fill();
 
+    // 모자
     c.fillStyle = '#d0182f';
     c.beginPath();
-    c.moveTo(414, 414);
-    c.bezierCurveTo(420, 370, 470, 348, 512, 372);
-    c.bezierCurveTo(540, 388, 552, 402, 556, 410);
-    c.bezierCurveTo(520, 404, 452, 404, 414, 414);
+    c.moveTo(412, 414);
+    c.bezierCurveTo(418, 370, 468, 348, 510, 372);
+    c.bezierCurveTo(538, 388, 550, 402, 554, 410);
+    c.bezierCurveTo(518, 404, 450, 404, 412, 414);
     c.closePath();
     c.fill();
     c.beginPath();
-    c.moveTo(512, 372);
-    c.bezierCurveTo(556, 356, 588, 372, 578, 400);
-    c.bezierCurveTo(566, 384, 540, 380, 522, 386);
+    c.moveTo(510, 372);
+    c.bezierCurveTo(554, 356, 586, 372, 576, 400);
+    c.bezierCurveTo(564, 384, 538, 380, 520, 386);
     c.closePath();
     c.fill();
     c.fillStyle = '#f6f8fd';
-    c.beginPath(); c.ellipse(478, 412, 66, 16, -0.03, 0, PI2); c.fill();
-    c.beginPath(); c.arc(588, 402, 14, 0, PI2); c.fill();
+    c.beginPath(); c.ellipse(476, 411, 64, 15, -0.03, 0, PI2); c.fill();
+    c.beginPath(); c.arc(586, 402, 13, 0, PI2); c.fill();
 
-    /* 5. 고삐 */
+    /* ---------- 5. 고삐 ---------- */
     c.save();
     c.strokeStyle = 'rgba(255,205,105,.92)';
     c.lineWidth = 5;
     c.lineCap = 'round';
     c.shadowColor = 'rgba(255,180,70,.9)';
     c.shadowBlur = 10;
-    c.beginPath(); c.moveTo(618, 505); c.quadraticCurveTo(810, 566, 1012, 486); c.stroke();
-    c.beginPath(); c.moveTo(618, 516); c.quadraticCurveTo(806, 588, 1006, 506); c.stroke();
+    c.beginPath(); c.moveTo(604, 512); c.quadraticCurveTo(800, 566, 1176, 468); c.stroke();
+    c.beginPath(); c.moveTo(604, 522); c.quadraticCurveTo(796, 588, 1172, 488); c.stroke();
     c.restore();
 
-    /* 6. 루돌프 */
-    const legs = [
-      { p: [[1014, 508], [972, 578], [938, 636]], w: 15, c: '#6b4220' },
-      { p: [[1046, 512], [1000, 592], [964, 654]], w: 17, c: '#7d4c24' },
-      { p: [[1168, 506], [1224, 574], [1248, 642]], w: 15, c: '#6b4220' },
-      { p: [[1196, 500], [1256, 586], [1280, 656]], w: 17, c: '#7d4c24' }
-    ];
+    /* ---------- 6. 루돌프 ---------- */
+    // 먼 쪽 다리
     c.save();
     c.lineCap = 'round';
-    for (const L of legs) {
-      c.strokeStyle = L.c;
-      c.lineWidth = L.w;
-      c.beginPath();
-      c.moveTo(L.p[0][0], L.p[0][1]);
-      c.quadraticCurveTo(L.p[1][0], L.p[1][1], L.p[2][0], L.p[2][1]);
-      c.stroke();
-      c.fillStyle = '#3d2412';
-      c.beginPath(); c.arc(L.p[2][0], L.p[2][1], L.w * 0.55, 0, PI2); c.fill();
+    const farLegs = [
+      [[1006, 500], [962, 574], [932, 638], 16],
+      [[1166, 498], [1216, 572], [1240, 640], 16]
+    ];
+    for (const [a, b, d, w] of farLegs) {
+      c.strokeStyle = '#5e3a1b';
+      c.lineWidth = w;
+      c.beginPath(); c.moveTo(a[0], a[1]); c.quadraticCurveTo(b[0], b[1], d[0], d[1]); c.stroke();
+      c.fillStyle = '#33200f';
+      c.beginPath(); c.arc(d[0], d[1], w * 0.55, 0, PI2); c.fill();
     }
     c.restore();
 
-    const bodyG = c.createLinearGradient(980, 410, 1180, 530);
+    // 몸통
+    const bodyG = c.createLinearGradient(970, 410, 1190, 530);
     bodyG.addColorStop(0, '#a06a35');
-    bodyG.addColorStop(0.55, '#82522a');
-    bodyG.addColorStop(1, '#5f3a1c');
+    bodyG.addColorStop(0.55, '#7f5028');
+    bodyG.addColorStop(1, '#5a3618');
     c.fillStyle = bodyG;
-    c.beginPath(); c.ellipse(1088, 472, 104, 56, -0.07, 0, PI2); c.fill();
-    c.beginPath(); c.ellipse(996, 480, 58, 54, -0.1, 0, PI2); c.fill();
-    c.beginPath(); c.ellipse(1174, 462, 52, 50, -0.12, 0, PI2); c.fill();
+    c.beginPath(); c.ellipse(1076, 470, 112, 50, -0.05, 0, PI2); c.fill();
+    c.beginPath(); c.ellipse(986, 474, 54, 46, -0.08, 0, PI2); c.fill();
+    c.beginPath(); c.ellipse(1164, 464, 50, 46, -0.10, 0, PI2); c.fill();
+    // 배(밝은 털)
+    c.fillStyle = 'rgba(214,178,128,.55)';
+    c.beginPath(); c.ellipse(1082, 492, 96, 20, -0.03, 0, PI2); c.fill();
 
+    // 가까운 쪽 다리
+    c.save();
+    c.lineCap = 'round';
+    const nearLegs = [
+      [[1040, 504], [988, 588], [954, 656], 20],
+      [[1192, 496], [1256, 584], [1282, 656], 20]
+    ];
+    for (const [a, b, d, w] of nearLegs) {
+      c.strokeStyle = '#7d4c24';
+      c.lineWidth = w;
+      c.beginPath(); c.moveTo(a[0], a[1]); c.quadraticCurveTo(b[0], b[1], d[0], d[1]); c.stroke();
+      c.fillStyle = '#3d2412';
+      c.beginPath(); c.arc(d[0], d[1], w * 0.5, 0, PI2); c.fill();
+    }
+    c.restore();
+
+    // 목
     c.fillStyle = '#8a5628';
     c.beginPath();
-    c.moveTo(1156, 436);
-    c.bezierCurveTo(1180, 400, 1216, 372, 1252, 366);
-    c.lineTo(1284, 406);
-    c.bezierCurveTo(1256, 424, 1224, 452, 1200, 492);
+    c.moveTo(1148, 436);
+    c.bezierCurveTo(1176, 400, 1214, 372, 1250, 366);
+    c.lineTo(1282, 404);
+    c.bezierCurveTo(1254, 422, 1220, 454, 1198, 494);
     c.closePath();
     c.fill();
 
+    // 머리
     c.fillStyle = '#95602e';
-    c.beginPath(); c.ellipse(1262, 378, 38, 28, -0.38, 0, PI2); c.fill();
+    c.beginPath(); c.ellipse(1258, 376, 38, 28, -0.38, 0, PI2); c.fill();
     c.fillStyle = '#a97040';
-    c.beginPath(); c.ellipse(1296, 394, 24, 17, -0.3, 0, PI2); c.fill();
-
+    c.beginPath(); c.ellipse(1294, 392, 24, 17, -0.3, 0, PI2); c.fill();
     c.save();
     c.fillStyle = '#ff3b2f';
     c.shadowColor = 'rgba(255,60,40,.95)';
     c.shadowBlur = 26;
-    c.beginPath(); c.arc(1314, 396, 11, 0, PI2); c.fill();
+    c.beginPath(); c.arc(1312, 394, 11, 0, PI2); c.fill();
     c.restore();
-
     c.fillStyle = '#7d4e24';
-    c.beginPath(); c.ellipse(1240, 350, 13, 22, 0.5, 0, PI2); c.fill();
-    c.beginPath(); c.ellipse(1268, 344, 12, 20, 0.25, 0, PI2); c.fill();
+    c.beginPath(); c.ellipse(1236, 348, 13, 22, 0.5, 0, PI2); c.fill();
+    c.beginPath(); c.ellipse(1264, 342, 12, 20, 0.25, 0, PI2); c.fill();
     c.fillStyle = '#241708';
-    c.beginPath(); c.arc(1268, 372, 4.5, 0, PI2); c.fill();
+    c.beginPath(); c.arc(1264, 370, 4.5, 0, PI2); c.fill();
 
+    // 뿔
     c.save();
     c.strokeStyle = '#e0c9a2';
     c.lineCap = 'round';
     const antlers = [
-      { w: 11, seg: [[1252, 352], [1236, 300], [1206, 262]] },
-      { w: 8, seg: [[1236, 300], [1196, 288]] },
-      { w: 8, seg: [[1219, 280], [1186, 250]] },
-      { w: 7, seg: [[1206, 262], [1192, 214]] },
-      { w: 10, seg: [[1272, 346], [1282, 296], [1310, 262]] },
-      { w: 7, seg: [[1282, 296], [1316, 292]] },
-      { w: 7, seg: [[1296, 280], [1322, 250]] },
-      { w: 6, seg: [[1310, 262], [1318, 216]] }
+      { w: 11, seg: [[1248, 350], [1232, 298], [1202, 260]] },
+      { w: 8, seg: [[1232, 298], [1192, 286]] },
+      { w: 8, seg: [[1215, 278], [1182, 248]] },
+      { w: 7, seg: [[1202, 260], [1188, 212]] },
+      { w: 10, seg: [[1268, 344], [1278, 294], [1306, 260]] },
+      { w: 7, seg: [[1278, 294], [1312, 290]] },
+      { w: 7, seg: [[1292, 278], [1318, 248]] },
+      { w: 6, seg: [[1306, 260], [1314, 214]] }
     ];
     for (const a of antlers) {
       c.lineWidth = a.w;
@@ -1169,21 +1207,17 @@
     }
     c.restore();
 
-    c.fillStyle = '#e6d6bd';
-    c.beginPath(); c.ellipse(968, 430, 13, 19, 0.4, 0, PI2); c.fill();
+    // 꼬리
+    c.fillStyle = '#e8dac2';
+    c.beginPath(); c.ellipse(966, 432, 12, 18, 0.4, 0, PI2); c.fill();
 
+    // 목걸이 + 방울
     c.strokeStyle = '#c8102a';
     c.lineWidth = 9;
     c.lineCap = 'round';
-    c.beginPath(); c.moveTo(1196, 436); c.quadraticCurveTo(1222, 470, 1252, 462); c.stroke();
+    c.beginPath(); c.moveTo(1192, 434); c.quadraticCurveTo(1218, 470, 1248, 460); c.stroke();
     c.fillStyle = '#f5c65a';
-    c.beginPath(); c.arc(1216, 466, 8, 0, PI2); c.fill();
-
-    c.save();
-    c.globalCompositeOperation = 'lighter';
-    c.fillStyle = 'rgba(220,160,90,.20)';
-    c.beginPath(); c.ellipse(1080, 448, 78, 20, -0.06, 0, PI2); c.fill();
-    c.restore();
+    c.beginPath(); c.arc(1212, 464, 8, 0, PI2); c.fill();
   }
 
   /* ---------- 부품들을 COUNT 개로 채우기 ---------- */
