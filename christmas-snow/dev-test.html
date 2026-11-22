@@ -711,7 +711,7 @@
 
   // 4) 리본 있는 선물 상자
   function buildGift() {
-    const yaw = 34 * Math.PI / 180, pitch = 24 * Math.PI / 180;
+    const yaw = 33 * Math.PI / 180, pitch = 17 * Math.PI / 180;
     const cyw = Math.cos(yaw), syw = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
     const T = (x, y, z) => {
       const X = x * cyw + z * syw;
@@ -727,7 +727,7 @@
 
     // 여섯 면
     const faces = [
-      { n: [0, 1, 0], k: 1.12 }, { n: [0, -1, 0], k: 0.42 },
+      { n: [0, 1, 0], k: 1.02 }, { n: [0, -1, 0], k: 0.42 },
       { n: [0, 0, 1], k: 0.94 }, { n: [0, 0, -1], k: 0.58 },
       { n: [1, 0, 0], k: 0.80 }, { n: [-1, 0, 0], k: 0.66 }
     ];
@@ -749,7 +749,7 @@
     const band = (faceN, axis) => {
       parts.push({ w: 0.020, fn: (rng, o) => {
         const u = rng() * 2 - 1, v = rng() * 2 - 1;
-        const w = 0.30;
+        const w = 0.255;
         let x, y, z;
         if (faceN[1] !== 0) {
           y = faceN[1] * (H + 0.012);
@@ -775,10 +775,10 @@
     // 위쪽 리본 매듭: 고리 두 개 + 가운데 매듭 + 꼬리
     const topY = H + 0.02;
     const loops = [
-      { c: [0.62, topY + 0.22, 0], n: [0.18, 0.30, 0.94], R: 0.50, R2: 0.28, tube: 0.17 },
-      { c: [-0.62, topY + 0.22, 0], n: [-0.18, 0.30, 0.94], R: 0.50, R2: 0.28, tube: 0.17 },
-      { c: [0.0, topY + 0.10, 0.46], n: [0.94, 0.30, 0.14], R: 0.38, R2: 0.22, tube: 0.15 },
-      { c: [0.0, topY + 0.10, -0.46], n: [0.94, 0.30, -0.14], R: 0.38, R2: 0.22, tube: 0.15 }
+      { c: [0.60, topY + 0.34, 0], n: [0.22, 0.34, 0.91], R: 0.54, R2: 0.30, tube: 0.18 },
+      { c: [-0.60, topY + 0.34, 0], n: [-0.22, 0.34, 0.91], R: 0.54, R2: 0.30, tube: 0.18 },
+      { c: [0.0, topY + 0.20, 0.48], n: [0.92, 0.34, 0.20], R: 0.40, R2: 0.24, tube: 0.16 },
+      { c: [0.0, topY + 0.20, -0.48], n: [0.92, 0.34, -0.20], R: 0.40, R2: 0.24, tube: 0.16 }
     ];
     for (const L of loops) {
       const c = T(L.c[0], L.c[1], L.c[2]);
