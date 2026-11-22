@@ -920,19 +920,19 @@
     const tx = W / 2, ty = 152;
 
     c.save();
-    c.shadowColor = 'rgba(255,205,110,.85)';
-    c.shadowBlur = 40;
-    c.fillStyle = 'rgba(255,214,130,.50)';
+    c.shadowColor = 'rgba(255,205,110,.8)';
+    c.shadowBlur = 30;
+    c.fillStyle = 'rgba(255,216,140,.36)';
     c.fillText(text, tx, ty);
     c.restore();
 
     const grad = c.createLinearGradient(0, ty - fs * 0.55, 0, ty + fs * 0.55);
-    grad.addColorStop(0.00, '#fffbe8');
-    grad.addColorStop(0.22, '#ffe9a8');
-    grad.addColorStop(0.46, '#f3c25c');
-    grad.addColorStop(0.68, '#c98f2c');
-    grad.addColorStop(0.84, '#f6d98a');
-    grad.addColorStop(1.00, '#b87c22');
+    grad.addColorStop(0.00, '#fffdf2');
+    grad.addColorStop(0.20, '#fff0bd');
+    grad.addColorStop(0.44, '#f8cf74');
+    grad.addColorStop(0.66, '#e0a63a');
+    grad.addColorStop(0.86, '#ffeaa8');
+    grad.addColorStop(1.00, '#c8912a');
     c.fillStyle = grad;
     c.fillText(text, tx, ty);
 
@@ -996,16 +996,16 @@
     c.shadowColor = 'rgba(255,196,96,.85)';
     c.shadowBlur = 14;
     c.beginPath(); c.moveTo(238, 690); c.bezierCurveTo(214, 682, 212, 656, 236, 644); c.stroke();
-    c.beginPath(); c.moveTo(244, 716); c.lineTo(628, 712);
-    c.bezierCurveTo(686, 710, 712, 726, 706, 764); c.stroke();
+    c.beginPath(); c.moveTo(244, 706); c.lineTo(628, 702);
+    c.bezierCurveTo(686, 700, 712, 716, 706, 752); c.stroke();
     c.restore();
 
     // 버팀대
     c.save();
     c.strokeStyle = 'rgba(226,178,84,.9)';
     c.lineWidth = 6;
-    c.beginPath(); c.moveTo(330, 634); c.lineTo(334, 712); c.stroke();
-    c.beginPath(); c.moveTo(566, 638); c.lineTo(568, 711); c.stroke();
+    c.beginPath(); c.moveTo(330, 634); c.lineTo(334, 702); c.stroke();
+    c.beginPath(); c.moveTo(566, 638); c.lineTo(568, 701); c.stroke();
     c.restore();
 
     /* ---------- 3. 선물 자루 + 곰인형 ---------- */
@@ -1540,7 +1540,7 @@
     deer:    { badge: '🦌 사슴',               sizeMul: 0.96, alphaMul: 0.85, ext: [3.4, 3.5] },
     gift:    { badge: '🎁 리본 선물 상자',      sizeMul: 0.96, alphaMul: 0.85, ext: [3.2, 3.4] },
     flake:   { badge: '❄️ 눈결정',             sizeMul: 0.90, alphaMul: 0.88, ext: [4.2, 4.2] },
-    santa:   { badge: '🎅 메리 크리스마스',     sizeMul: 0.80, alphaMul: 0.90, ext: [4.7, 3.1] }
+    santa:   { badge: '🎅 메리 크리스마스',     sizeMul: 0.74, alphaMul: 0.92, ext: [4.7, 3.1] }
   };
   const SHAPE_IDS = ['tree', 'snowman', 'deer', 'gift', 'flake', 'santa'];
   const shapes = {};
