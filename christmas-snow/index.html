@@ -489,7 +489,7 @@
 
   // 1) 크리스마스 트리 + 나선 전구 + 꼭대기 별
   function buildTree() {
-    const BASE_Y = -4.55, TREE_H = 8.0, TREE_R = 3.30;
+    const BASE_Y = -4.00, TREE_H = 8.0, TREE_R = 3.30;
     const parts = [];
     const ornament = [
       [0.92, 0.62, 0.14], [0.92, 0.62, 0.14], [0.92, 0.62, 0.14],
@@ -728,7 +728,7 @@
     // 보이는 세 면만 (가산 합성이라 안쪽 면까지 그리면 상자가 비어 보인다)
     const faces = [
       { n: [0, 1, 0], k: 1.00 },
-      { n: [0, 0, 1], k: 0.92 },
+      { n: [0, 0, 1], k: 1.02 },
       { n: [-1, 0, 0], k: 0.74 }
     ];
     for (const f of faces) {
@@ -1540,9 +1540,9 @@
     tree:    { badge: '🎄 트리·장식·별',       sizeMul: 1.02, alphaMul: 0.96, ext: [3.6, 5.8] },
     snowman: { badge: '⛄ 눈사람',             sizeMul: 0.98, alphaMul: 0.66, ext: [2.9, 5.5] },
     follow:  { badge: '✨ 눈 입자 손 따라가기', sizeMul: 1.05, alphaMul: 1.00, ext: [4.4, 8.0] },
-    deer:    { badge: '🦌 사슴',               sizeMul: 0.96, alphaMul: 0.85, ext: [3.4, 3.5] },
-    gift:    { badge: '🎁 리본 선물 상자',      sizeMul: 0.96, alphaMul: 0.85, ext: [3.2, 3.4] },
-    flake:   { badge: '❄️ 눈결정',             sizeMul: 0.90, alphaMul: 0.88, ext: [4.2, 4.2] },
+    deer:    { badge: '🦌 사슴',               sizeMul: 0.96, alphaMul: 0.85, ext: [3.9, 4.2] },
+    gift:    { badge: '🎁 리본 선물 상자',      sizeMul: 0.96, alphaMul: 0.85, ext: [3.7, 4.0] },
+    flake:   { badge: '❄️ 눈결정',             sizeMul: 0.90, alphaMul: 0.88, ext: [4.5, 4.5] },
     santa:   { badge: '🎅 메리 크리스마스',     sizeMul: 0.78, alphaMul: 0.92, ext: [5.2, 3.5] }
   };
   const SHAPE_IDS = ['tree', 'snowman', 'deer', 'gift', 'flake', 'santa'];
