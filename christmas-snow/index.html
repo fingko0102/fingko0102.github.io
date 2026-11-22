@@ -1974,8 +1974,54 @@
     }
   }
 
+  /* 카메라 열기: 다른 탭·앱이 카메라를 쥐고 있으면 getUserMedia가 끝나지 않고
+     멈춰 있을 수 있다. 8초 제한을 두고, 실패하면 가장 단순한 옵션으로 한 번 더
+     시도한 뒤 그래도 안 되면 확실히 에러 처리로 넘긴다. */
+  const CAM_TIMEOUT_MS = 8000;
+  let camSession = 0;   // stopCamera 등으로 값이 바뀌면 진행 중이던 요청 결과는 버린다
+  let camUsed = false;  // 이 페이지에서 카메라를 한 번이라도 켰는지 (배지 문구 복원용)
+
+  function releaseStream(s) {
+    if (!s) return;
+    try { s.getTracks().forEach((t) => t.stop()); } catch (e) {}
+  }
+
+  function requestCamera(constraints, ms) {
+    const mySession = camSession;
+    let settled = false;
+    let timer = null;
+
+    const guarded = navigator.mediaDevices.getUserMedia(constraints).then((s) => {
+      // 이미 포기했거나 취소된 요청이면 늦게 도착한 스트림도 바로 반환한다
+      if (!s || settled || mySession !== camSession) {
+        releaseStream(s);
+        settled = true;
+        const e = new Error('카메라 준비 취소됨');
+        e.name = 'AbortError';
+        throw e;
+      }
+      settled = true;
+      return s;
+    }, (err) => {
+      settled = true;
+      throw err;
+    });
+
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        settled = true;
+        const e = new Error('카메라 응답 없음 (' + ms + 'ms)');
+        e.name = 'TimeoutError';
+        reject(e);
+      }, ms);
+    });
+
+    return Promise.race([guarded, timeout]).finally(() => clearTimeout(timer));
+  }
+
   async function startCamera() {
     if (camStarting || camOn) return;
+    const mySession = ++camSession;
     camStarting = true;
     btnCam.disabled = true;
     btnCam.textContent = '📷 카메라 준비 중…';
@@ -1985,10 +2031,19 @@
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('getUserMedia 없음');
       }
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30, max: 30 } },
-        audio: false
-      });
+
+      try {
+        stream = await requestCamera({
+          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30, max: 30 } },
+          audio: false
+        }, CAM_TIMEOUT_MS);
+      } catch (err1) {
+        if (err1 && err1.name === 'AbortError') throw err1;
+        window.__snowErrors.push('camera fallback: ' + (err1 && err1.name) + ' ' + (err1 && err1.message));
+        setGestureBadge('⏳ 카메라 다시 연결 중', false, false);
+        stream = await requestCamera({ video: { facingMode: 'user' }, audio: false }, CAM_TIMEOUT_MS);
+      }
+
       video.srcObject = stream;
       await video.play().catch(() => {});
       await new Promise((res) => {
@@ -2007,28 +2062,48 @@
       setGestureBadge('⏳ 손 인식 모델 불러오는 중', false, false);
       await ensureLandmarker();
 
+      if (mySession !== camSession) {   // 그 사이 탭 전환 등으로 취소됨
+        releaseStream(stream);
+        stream = null;
+        video.srcObject = null;
+        return;
+      }
+
       camOn = true;
+      camUsed = true;
       $('camwrap').classList.add('show');
       btnCam.textContent = '📷 카메라 끄기';
       btnCam.classList.add('active');
       setGestureBadge('🖐 손을 기다리는 중', false, false);
       toast('손을 카메라에 보여 주세요. 손가락 개수로 모양이 바뀌어요!', 3600);
     } catch (err) {
-      window.__snowErrors.push('camera: ' + (err && err.message));
-      stopCamera(true);
+      window.__snowErrors.push('camera: ' + (err && err.name) + ' ' + (err && err.message));
+      const cancelled = (err && err.name === 'AbortError') || mySession !== camSession;
+      stopCamera(true);   // 스트림·버튼 상태를 확실히 되돌린다
+      if (cancelled) return;   // 탭이 숨겨지거나 닫혀서 취소된 경우는 조용히 끝낸다
       setGestureBadge('📷 카메라 꺼짐', false, false);
       const denied = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
-      toast(denied
-        ? '카메라 권한이 거부되었어요. 아래 칩으로 모든 모양을 그대로 볼 수 있어요.'
-        : '카메라를 열 수 없어요. 아래 칩으로 모든 모양을 그대로 볼 수 있어요.', 4200);
+      const noAnswer = err && (err.name === 'TimeoutError' || err.name === 'NotReadableError');
+      if (denied) {
+        toast('카메라 권한이 거부되었어요. 아래 칩으로 모든 모양을 그대로 볼 수 있어요.', 4200);
+      } else if (noAnswer) {
+        toast('다른 탭에서 카메라를 쓰고 있거나 카메라가 응답하지 않아요. 다른 탭을 닫고 다시 눌러 주세요.', 5200);
+      } else {
+        toast('카메라를 열 수 없어요. 아래 칩으로 모든 모양을 그대로 볼 수 있어요.', 4200);
+      }
     } finally {
-      camStarting = false;
-      btnCam.disabled = false;
-      if (!camOn) btnCam.textContent = '📷 카메라 손 인식';
+      if (mySession === camSession) {
+        camStarting = false;
+        btnCam.disabled = false;
+        if (!camOn) btnCam.textContent = '📷 카메라 손 인식';
+      }
     }
   }
 
   function stopCamera(silent) {
+    camSession++;      // 진행 중이던 camera 요청은 늦게 와도 버린다
+    camStarting = false;
+    btnCam.disabled = false;
     camOn = false;
     handActive = false;
     handFps = 0;
@@ -2220,8 +2295,16 @@
     if (running) {
       lastFrame = performance.now();
       requestAnimationFrame(frame);
+      if (!camOn && camUsed) setGestureBadge('📷 카메라 꺼짐', false, false);
+    } else {
+      // 다른 탭·앱으로 가면 카메라를 바로 놓아준다 (새 탭에서 카메라 점유 충돌 방지)
+      if (camOn || camStarting) stopCamera(false);
     }
   });
+
+  // 탭을 닫거나 다른 페이지로 이동할 때 카메라 트랙을 즉시 반환
+  window.addEventListener('pagehide', () => { if (camOn || camStarting) stopCamera(true); });
+  window.addEventListener('beforeunload', () => { if (camOn || camStarting) stopCamera(true); });
 
   /* =========================================================
      애니메이션 루프
