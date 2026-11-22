@@ -435,6 +435,7 @@
   // 도넛(목도리·리본 고리·고삐 고리)
   function torus(cx, cy, cz, nx, ny, nz, R, tube, rgb, opt = {}) {
     const sh = opt.shade === undefined ? 0.34 : opt.shade;
+    const R2 = opt.R2 === undefined ? R : opt.R2;
     const nl0 = Math.hypot(nx, ny, nz) || 1;
     nx /= nl0; ny /= nl0; nz /= nl0;
     let hx = 0, hy = 1, hz = 0;
@@ -445,15 +446,19 @@
     return (rng, o) => {
       const a = rng() * PI2;
       const ca = Math.cos(a), sa = Math.sin(a);
-      const bx = ux * ca + vx * sa, by = uy * ca + vy * sa, bz = uz * ca + vz * sa;
+      const rx = ux * ca * R + vx * sa * R2;
+      const ry = uy * ca * R + vy * sa * R2;
+      const rz = uz * ca * R + vz * sa * R2;
+      const rl = Math.hypot(rx, ry, rz) || 1;
+      const bx = rx / rl, by = ry / rl, bz = rz / rl;
       const rr = tube * (0.55 + 0.45 * Math.sqrt(rng()));
       const b2 = rng() * PI2;
       const o2x = bx * Math.cos(b2) + nx * Math.sin(b2);
       const o2y = by * Math.cos(b2) + ny * Math.sin(b2);
       const o2z = bz * Math.cos(b2) + nz * Math.sin(b2);
-      o.x = cx + bx * R + o2x * rr;
-      o.y = cy + by * R + o2y * rr;
-      o.z = cz + bz * R + o2z * rr;
+      o.x = cx + rx + o2x * rr;
+      o.y = cy + ry + o2y * rr;
+      o.z = cz + rz + o2z * rr;
       const nl = Math.max(0, o2x * LIGHT[0] + o2y * LIGHT[1] + o2z * LIGHT[2]);
       tint(o, rgb[0], rgb[1], rgb[2], 1 - sh + sh * nl * 1.5);
     };
@@ -706,7 +711,7 @@
 
   // 4) 리본 있는 선물 상자
   function buildGift() {
-    const yaw = 34 * Math.PI / 180, pitch = 15 * Math.PI / 180;
+    const yaw = 34 * Math.PI / 180, pitch = 24 * Math.PI / 180;
     const cyw = Math.cos(yaw), syw = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
     const T = (x, y, z) => {
       const X = x * cyw + z * syw;
@@ -715,7 +720,7 @@
       const Z = y * sp + Z1 * cp;
       return [X, Y - 0.42, Z];
     };
-    const H = 1.62;                       // 반지름
+    const H = 1.52;                       // 반지름
     const RED = [0.80, 0.14, 0.20];
     const GOLD = [1.0, 0.82, 0.42];
     const parts = [];
@@ -770,17 +775,17 @@
     // 위쪽 리본 매듭: 고리 두 개 + 가운데 매듭 + 꼬리
     const topY = H + 0.02;
     const loops = [
-      { c: [0.58, topY + 0.30, 0], n: [0, 0.28, 0.96], R: 0.46, tube: 0.19 },
-      { c: [-0.58, topY + 0.30, 0], n: [0, 0.28, 0.96], R: 0.46, tube: 0.19 },
-      { c: [0.0, topY + 0.16, 0.40], n: [0.95, 0.26, 0], R: 0.34, tube: 0.16 },
-      { c: [0.0, topY + 0.16, -0.40], n: [0.95, 0.26, 0], R: 0.34, tube: 0.16 }
+      { c: [0.62, topY + 0.22, 0], n: [0.18, 0.30, 0.94], R: 0.50, R2: 0.28, tube: 0.17 },
+      { c: [-0.62, topY + 0.22, 0], n: [-0.18, 0.30, 0.94], R: 0.50, R2: 0.28, tube: 0.17 },
+      { c: [0.0, topY + 0.10, 0.46], n: [0.94, 0.30, 0.14], R: 0.38, R2: 0.22, tube: 0.15 },
+      { c: [0.0, topY + 0.10, -0.46], n: [0.94, 0.30, -0.14], R: 0.38, R2: 0.22, tube: 0.15 }
     ];
     for (const L of loops) {
       const c = T(L.c[0], L.c[1], L.c[2]);
       const nn = T(L.c[0] + L.n[0], L.c[1] + L.n[1], L.c[2] + L.n[2]);
-      parts.push({ w: 0.022, fn: (rng, o) => {
+      parts.push({ w: 0.024, fn: (rng, o) => {
         torus(c[0], c[1], c[2], nn[0] - c[0], nn[1] - c[1], nn[2] - c[2],
-              L.R, L.tube, GOLD, { shade: 0.26 })(rng, o);
+              L.R, L.tube, GOLD, { shade: 0.26, R2: L.R2 })(rng, o);
       }});
     }
     const knot = T(0, topY + 0.12, 0);
@@ -827,33 +832,34 @@
 
     for (let k = 0; k < 6; k++) {
       const base = k * Math.PI / 3;
-      parts.push({ w: 0.062, fn: arm(base, 0.34, 3.42, 0.105, 0.024, ICE) });
+      const ca = Math.cos(base), sa = Math.sin(base);
+      parts.push({ w: 0.058, fn: arm(base, 0.30, 3.34, 0.095, 0.020, ICE) });
 
-      // 깃털 같은 곁가지 (짧게, 바깥으로 몇 단)
-      const br = [[0.95, 0.62, 0.060], [1.55, 0.52, 0.050], [2.12, 0.42, 0.040], [2.62, 0.30, 0.030]];
+      // 깃털 같은 곁가지 — 팔 위의 점에서 양옆으로 뻗는다
+      const br = [[0.85, 0.66, 0.055], [1.42, 0.58, 0.048], [1.96, 0.46, 0.038], [2.46, 0.34, 0.028]];
       for (const [r, len, wid] of br) {
+        const A = [ca * r, sa * r, 0];
         for (const sgn of [1, -1]) {
-          parts.push({ w: 0.0105, fn: arm(base + sgn * 0.72, r, r + len, wid, wid * 0.25, ICE) });
+          const a2 = base + sgn * 0.78;
+          const B = [A[0] + Math.cos(a2) * len, A[1] + Math.sin(a2) * len, 0];
+          parts.push({ w: 0.0095, fn: limb(A, B, wid, wid * 0.22, ICE, { shade: 0.10 }) });
+          // 작은 잔가지
+          const m = 0.55;
+          const A2 = [A[0] + (B[0] - A[0]) * m, A[1] + (B[1] - A[1]) * m, 0];
+          const a3 = base + sgn * 1.35;
+          const B2 = [A2[0] + Math.cos(a3) * len * 0.38, A2[1] + Math.sin(a3) * len * 0.38, 0];
+          parts.push({ w: 0.004, fn: limb(A2, B2, wid * 0.5, wid * 0.12, ICE, { shade: 0.10 }) });
         }
       }
 
-      // 중심 육각 고리 — 이웃 팔을 잇는 짧은 변
-      const a1 = base, a2 = base + Math.PI / 3;
-      parts.push({ w: 0.020, fn: (rng, o) => {
-        const t = rng();
-        const p0 = P(a1, 0.78), p1 = P(a2, 0.78);
-        o.x = p0[0] + (p1[0] - p0[0]) * t + (rng() - 0.5) * 0.05;
-        o.y = p0[1] + (p1[1] - p0[1]) * t + (rng() - 0.5) * 0.05;
-        o.z = (rng() - 0.5) * 0.08;
-        tint(o, ICE[0], ICE[1], ICE[2], 0.82 + rng() * 0.26);
-      }});
+      // 중심 육각 고리 — 이웃 팔을 잇는 가는 변
+      parts.push({ w: 0.014, fn: limb(P(base, 0.62), P(base + Math.PI / 3, 0.62), 0.042, 0.042, ICE, { shade: 0.1 }) });
 
-      // 끝 다이아몬드
-      parts.push({ w: 0.012, fn: (rng, o) => {
-        const t = Math.pow(rng(), 0.7);
-        const rr = 3.28 + t * 0.34;
-        const ca = Math.cos(base), sa = Math.sin(base);
-        const ww = 0.15 * (1 - t) + 0.02;
+      // 끝 다이아몬드 (팔 방향으로 놓인 마름모)
+      parts.push({ w: 0.011, fn: (rng, o) => {
+        const t = rng() * 2 - 1;
+        const rr = 3.32 + t * 0.26;
+        const ww = (1 - Math.abs(t)) * 0.115 + 0.005;
         const off = (rng() * 2 - 1) * ww;
         o.x = ca * rr - sa * off;
         o.y = sa * rr + ca * off;
@@ -946,14 +952,14 @@
 
     /* ---------- 2. 썰매 (뒤쪽 높은 등받이 + 앞쪽 말린 코) ---------- */
     const sleigh = new Path2D();
-    sleigh.moveTo(258, 462);
-    sleigh.bezierCurveTo(216, 498, 210, 566, 246, 612);
-    sleigh.bezierCurveTo(272, 646, 470, 660, 596, 650);
-    sleigh.bezierCurveTo(652, 644, 676, 626, 684, 596);
-    sleigh.bezierCurveTo(700, 548, 692, 500, 668, 476);
-    sleigh.bezierCurveTo(648, 458, 616, 468, 604, 490);
-    sleigh.bezierCurveTo(560, 512, 470, 506, 380, 494);
-    sleigh.bezierCurveTo(330, 487, 288, 452, 258, 462);
+    sleigh.moveTo(248, 438);
+    sleigh.bezierCurveTo(206, 470, 198, 552, 234, 602);
+    sleigh.bezierCurveTo(262, 642, 450, 656, 588, 648);
+    sleigh.bezierCurveTo(650, 644, 686, 620, 700, 578);
+    sleigh.bezierCurveTo(716, 522, 706, 476, 682, 458);
+    sleigh.bezierCurveTo(658, 442, 626, 456, 612, 484);
+    sleigh.bezierCurveTo(560, 508, 452, 502, 360, 490);
+    sleigh.bezierCurveTo(310, 483, 268, 428, 248, 438);
     sleigh.closePath();
     const sg = c.createLinearGradient(0, 470, 0, 660);
     sg.addColorStop(0, '#ec3a4e');
@@ -969,9 +975,9 @@
     c.shadowColor = 'rgba(255,190,90,.9)';
     c.shadowBlur = 14;
     c.beginPath();
-    c.moveTo(266, 466);
-    c.bezierCurveTo(330, 492, 392, 502, 462, 500);
-    c.bezierCurveTo(542, 498, 596, 500, 636, 484);
+    c.moveTo(256, 444);
+    c.bezierCurveTo(316, 486, 396, 498, 466, 496);
+    c.bezierCurveTo(544, 494, 596, 496, 634, 480);
     c.stroke();
     c.restore();
 
@@ -1048,9 +1054,9 @@
     c.strokeStyle = '#c81630';
     c.lineWidth = 30;
     c.lineCap = 'round';
-    c.beginPath(); c.moveTo(516, 552); c.quadraticCurveTo(558, 530, 592, 524); c.stroke();
-    c.fillStyle = '#eef1f8';
-    c.beginPath(); c.arc(600, 522, 15, 0, PI2); c.fill();
+    c.beginPath(); c.moveTo(520, 544); c.quadraticCurveTo(566, 512, 600, 502); c.stroke();
+    c.fillStyle = '#dfe4f0';
+    c.beginPath(); c.arc(608, 500, 14, 0, PI2); c.fill();
     c.restore();
 
     // 얼굴
@@ -1107,8 +1113,8 @@
     c.lineCap = 'round';
     c.shadowColor = 'rgba(255,180,70,.9)';
     c.shadowBlur = 10;
-    c.beginPath(); c.moveTo(604, 512); c.quadraticCurveTo(800, 566, 1176, 468); c.stroke();
-    c.beginPath(); c.moveTo(604, 522); c.quadraticCurveTo(796, 588, 1172, 488); c.stroke();
+    c.beginPath(); c.moveTo(612, 494); c.quadraticCurveTo(800, 556, 1176, 468); c.stroke();
+    c.beginPath(); c.moveTo(612, 504); c.quadraticCurveTo(796, 578, 1172, 488); c.stroke();
     c.restore();
 
     /* ---------- 6. 루돌프 ---------- */
@@ -1209,7 +1215,7 @@
 
     // 꼬리
     c.fillStyle = '#e8dac2';
-    c.beginPath(); c.ellipse(966, 432, 12, 18, 0.4, 0, PI2); c.fill();
+    c.beginPath(); c.ellipse(958, 450, 11, 16, 0.35, 0, PI2); c.fill();
 
     // 목걸이 + 방울
     c.strokeStyle = '#c8102a';
@@ -1533,8 +1539,8 @@
     snowman: { badge: '⛄ 눈사람',             sizeMul: 0.98, alphaMul: 0.66, ext: [2.6, 4.9] },
     follow:  { badge: '✨ 눈 입자 손 따라가기', sizeMul: 1.05, alphaMul: 1.00, ext: [4.4, 8.0] },
     deer:    { badge: '🦌 사슴',               sizeMul: 0.96, alphaMul: 0.85, ext: [3.4, 3.5] },
-    gift:    { badge: '🎁 리본 선물 상자',      sizeMul: 0.96, alphaMul: 0.85, ext: [3.0, 3.2] },
-    flake:   { badge: '❄️ 눈결정',             sizeMul: 0.90, alphaMul: 0.88, ext: [3.9, 3.9] },
+    gift:    { badge: '🎁 리본 선물 상자',      sizeMul: 0.96, alphaMul: 0.85, ext: [3.2, 3.4] },
+    flake:   { badge: '❄️ 눈결정',             sizeMul: 0.90, alphaMul: 0.88, ext: [4.2, 4.2] },
     santa:   { badge: '🎅 메리 크리스마스',     sizeMul: 0.80, alphaMul: 0.90, ext: [4.7, 3.1] }
   };
   const SHAPE_IDS = ['tree', 'snowman', 'deer', 'gift', 'flake', 'santa'];
