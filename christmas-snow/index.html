@@ -1699,16 +1699,24 @@
   }
 
   /* ---------- 제스처 → 모드 ---------- */
+  // 손가락 2개는 검지·중지가 붙은 모양(🤞)과 벌린 모양(✌️)을 거리로 나눈다
+  const TWO_FINGER = {
+    closed: { mode: 'follow', emoji: '🤞', name: '손가락 2개(모음)' },
+    open:   { mode: 'tree',   emoji: '✌️', name: '손가락 2개(벌림)' }
+  };
+
   const GESTURES = {
     0: { mode: 'santa',   emoji: '✊', name: '주먹' },
     1: { mode: 'snowman', emoji: '☝️', name: '손가락 1개' },
-    2: { mode: 'follow',  emoji: '✌️', name: '손가락 2개' },
+    2: { mode: 'follow',  emoji: '🤞', name: '손가락 2개(모음)' },  // 아래에서 붙음/벌림으로 다시 판별
     3: { mode: 'deer',    emoji: '🤟', name: '손가락 3개' },
     4: { mode: 'gift',    emoji: '🖖', name: '손가락 4개' },
     5: { mode: 'flake',   emoji: '🖐', name: '손가락 5개' }
   };
   const GESTURE_BY_MODE = {};
   for (const k in GESTURES) GESTURE_BY_MODE[GESTURES[k].mode] = GESTURES[k];
+  GESTURE_BY_MODE.follow = TWO_FINGER.closed;
+  GESTURE_BY_MODE.tree = TWO_FINGER.open;
 
   /* =========================================================
      포인터 입력
@@ -1783,32 +1791,61 @@
 
   const dist2 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, (a.z || 0) - (b.z || 0));
 
-  // 손가락 개수 0~5 (엄지는 손바닥 중심 기준으로 판별)
-  function fingerCount(lm) {
+  // 펴진 손가락 상태 [엄지, 검지, 중지, 약지, 새끼]
+  function fingerStates(lm) {
     const wrist = lm[0];
     const palm = Math.max(dist2(lm[0], lm[9]), 1e-4);
-    let ext = 0;
+    const st = [false, false, false, false, false];
     const F = [[8, 6, 5], [12, 10, 9], [16, 14, 13], [20, 18, 17]];
-    for (const [tip, pip, mcp] of F) {
+    for (let i = 0; i < 4; i++) {
+      const [tip, pip, mcp] = F[i];
       const dTip = dist2(lm[tip], lm[mcp]);
       const dPip = dist2(lm[pip], lm[mcp]);
       const far = dist2(lm[tip], wrist) > dist2(lm[pip], wrist) * 1.14;
-      if (dTip > dPip * 1.32 && far) ext++;
+      st[i + 1] = dTip > dPip * 1.32 && far;
     }
     // 엄지: 손가락 밑동(새끼)에서 멀고, 손바닥 중심에서도 충분히 멀면 펴진 것
-    const thumbOut =
-      dist2(lm[4], lm[17]) > dist2(lm[2], lm[17]) * 1.12 &&
-      dist2(lm[4], lm[9]) > palm * 0.78;
-    if (thumbOut) ext++;
+    st[0] = dist2(lm[4], lm[17]) > dist2(lm[2], lm[17]) * 1.12 &&
+            dist2(lm[4], lm[9]) > palm * 0.78;
+    return st;
+  }
+
+  // 손가락 개수 0~5 (엄지는 손바닥 중심 기준으로 판별)
+  function fingerCount(lm) {
+    let ext = 0;
+    for (const v of fingerStates(lm)) if (v) ext++;
     return ext;
+  }
+
+  /* ---------- 손가락 2개: 붙음(🤞) vs 벌림(✌️) ---------- */
+  // 검지 끝~중지 끝 거리를 손바닥 길이(손목~중지 밑동)로 나눈 비율
+  function twoFingerRatio(lm) {
+    const palm = Math.max(Math.hypot(lm[0].x - lm[9].x, lm[0].y - lm[9].y), 1e-4);
+    return Math.hypot(lm[8].x - lm[12].x, lm[8].y - lm[12].y) / palm;
+  }
+  const TWO_MERGE = 0.32;  // 이하면 붙음
+  const TWO_SPLIT = 0.40;  // 이상이면 벌림 (사이 값은 직전 판정 유지 → 경계에서 깜빡이지 않게)
+  const TWO_MID   = 0.35;
+  let twoSplit = null;
+
+  function pickTwoFinger(lm, states) {
+    // 검지·중지가 아닌 다른 두 손가락이면 기존처럼 손 따라가기
+    if (states && !(states[1] && states[2])) return TWO_FINGER.closed;
+    const r = twoFingerRatio(lm);
+    if (r >= TWO_SPLIT) twoSplit = true;
+    else if (r <= TWO_MERGE) twoSplit = false;
+    else if (twoSplit === null) twoSplit = r >= TWO_MID;
+    return twoSplit ? TWO_FINGER.open : TWO_FINGER.closed;
   }
 
   const countHist = [];
   let gestureCandidate = null;
   let gestureSince = 0;
 
-  function updateGesture(lm) {
-    const raw = fingerCount(lm);
+  function updateGesture(lm, nowMs) {
+    const states = fingerStates(lm);
+    let raw = 0;
+    for (const v of states) if (v) raw++;
     countHist.push(raw);
     if (countHist.length > 7) countHist.shift();
     // 최빈값(동률이면 최근 값)
@@ -1818,14 +1855,14 @@
       for (const x of countHist) if (x === v) n++;
       if (n > best || (n === best && v === raw)) { best = n; count = v; }
     }
-    const g = GESTURES[count];
-    const now = performance.now();
-    if (!g) { gestureCandidate = null; return; }
+    const g = count === 2 ? pickTwoFinger(lm, states) : GESTURES[count];
+    const now = nowMs || performance.now();
+    if (!g) { gestureCandidate = null; return null; }
 
     if (gestureCandidate !== g.mode) {
       gestureCandidate = g.mode;
       gestureSince = now;
-      return;
+      return g;
     }
     const held = now - gestureSince;
     if (held > 350) {
@@ -1834,6 +1871,7 @@
     } else {
       setGestureBadge(`${g.emoji} ${g.name} …`, true, false);
     }
+    return g;
   }
 
   function drawHand(lm) {
@@ -1873,8 +1911,8 @@
         handActive = true;
         cursorEl.classList.add('show');
         setGestureBadge('✋ 손을 찾았어요', true, false);
-        // 손이 처음 보이면 트리·장식·별을 보여 준다
-        if (mode === 'snow') setMode('tree', 'gesture');
+        // 손이 처음 보이면 트리·장식·별을 보여 준다 (제스처 안내 문구는 띄우지 않는다)
+        if (mode === 'snow') setMode('tree', 'auto');
       }
 
       const tip = lm[8];
@@ -1906,6 +1944,7 @@
         drawHand(null);
         gestureCandidate = null;
         countHist.length = 0;
+        twoSplit = null;
         strengthTarget = 0;
       }
     }
@@ -2367,6 +2406,18 @@
     get pixelRatio() { return renderer.getPixelRatio(); },
     setMode: (m) => setMode(m, 'chip'),
     fingerCount: (lm) => fingerCount(lm),
+    twoFingerRatio: (lm) => +twoFingerRatio(lm).toFixed(3),
+    // 합성 랜드마크 검사용: 판정을 여러 번 넣어 350ms 유지 조건까지 확인한다
+    resetGesture: () => {
+      countHist.length = 0; gestureCandidate = null; gestureSince = 0; twoSplit = null;
+      return true;
+    },
+    feed: (lm, n = 12, dt = 60) => {
+      const end = performance.now();
+      let t = end - n * dt, g = null;
+      for (let i = 0; i < n; i++) { t += dt; g = updateGesture(lm, t); }
+      return g ? { mode: g.mode, name: g.name, now: mode } : null;
+    },
     project: (id, scale = 80) => {
       const sh = shapes[id];
       if (!sh) return 'no shape';
