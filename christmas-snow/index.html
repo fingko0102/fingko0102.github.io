@@ -193,6 +193,18 @@
     var r = e.reason;
     window.__snowErrors.push('rejection: ' + ((r && r.message) || String(r)));
   });
+  // console.error 도 같이 기록 (검증용)
+  (function () {
+    var orig = console.error.bind(console);
+    console.error = function () {
+      try {
+        window.__snowErrors.push('console: ' + Array.prototype.map.call(arguments, function (a) {
+          return (a && a.message) || String(a);
+        }).join(' ').slice(0, 240));
+      } catch (err) {}
+      orig.apply(null, arguments);
+    };
+  })();
   </script>
 
   <script type="module">
@@ -1300,6 +1312,7 @@
     get webgl2() { return isWebGL2; },
     get camera() { return camOn; },
     get hand() { return handActive; },
+    get audio() { return music.ctx ? (music.ctx.state + '@' + music.ctx.currentTime.toFixed(1) + 's') : 'off'; },
     get errors() { return window.__snowErrors.slice(); },
     get pixelRatio() { return renderer.getPixelRatio(); },
     get drawCalls() { return renderer.info.render.calls; },
