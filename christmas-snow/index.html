@@ -1997,7 +1997,7 @@
         releaseStream(s);
         settled = true;
         const e = new Error('카메라 준비 취소됨');
-        e.name = 'AbortError';
+        e.name = 'CameraCancelled';   // 브라우저가 내는 AbortError(카메라 사용 중)와 구분한다
         throw e;
       }
       settled = true;
@@ -2038,9 +2038,12 @@
           audio: false
         }, CAM_TIMEOUT_MS);
       } catch (err1) {
-        if (err1 && err1.name === 'AbortError') throw err1;
+        if (err1 && err1.name === 'CameraCancelled') throw err1;
         window.__snowErrors.push('camera fallback: ' + (err1 && err1.name) + ' ' + (err1 && err1.message));
         setGestureBadge('⏳ 카메라 다시 연결 중', false, false);
+        // 다른 탭이 카메라를 놓을 시간을 잠깐 준 뒤 가장 단순한 옵션으로 한 번 더
+        await new Promise((res) => setTimeout(res, 400));
+        if (mySession !== camSession) throw Object.assign(new Error('카메라 준비 취소됨'), { name: 'CameraCancelled' });
         stream = await requestCamera({ video: { facingMode: 'user' }, audio: false }, CAM_TIMEOUT_MS);
       }
 
@@ -2078,12 +2081,13 @@
       toast('손을 카메라에 보여 주세요. 손가락 개수로 모양이 바뀌어요!', 3600);
     } catch (err) {
       window.__snowErrors.push('camera: ' + (err && err.name) + ' ' + (err && err.message));
-      const cancelled = (err && err.name === 'AbortError') || mySession !== camSession;
+      const cancelled = (err && err.name === 'CameraCancelled') || mySession !== camSession;
       stopCamera(true);   // 스트림·버튼 상태를 확실히 되돌린다
       if (cancelled) return;   // 탭이 숨겨지거나 닫혀서 취소된 경우는 조용히 끝낸다
       setGestureBadge('📷 카메라 꺼짐', false, false);
       const denied = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
-      const noAnswer = err && (err.name === 'TimeoutError' || err.name === 'NotReadableError');
+      const noAnswer = err && (err.name === 'TimeoutError' || err.name === 'NotReadableError'
+        || err.name === 'AbortError' || err.name === 'TrackStartError');
       if (denied) {
         toast('카메라 권한이 거부되었어요. 아래 칩으로 모든 모양을 그대로 볼 수 있어요.', 4200);
       } else if (noAnswer) {
