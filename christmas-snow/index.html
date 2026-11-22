@@ -1977,6 +1977,7 @@
     } catch (err) {
       window.__snowErrors.push('camera: ' + (err && err.message));
       stopCamera(true);
+      setGestureBadge('📷 카메라 꺼짐', false, false);
       const denied = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
       toast(denied
         ? '카메라 권한이 거부되었어요. 아래 칩으로 모든 모양을 그대로 볼 수 있어요.'
