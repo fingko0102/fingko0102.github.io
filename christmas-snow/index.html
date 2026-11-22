@@ -334,15 +334,15 @@
         vec3 n = d / max(dist, 0.0001);
         // 안쪽이 더 빨리 도는 소용돌이 + 나선으로 감기기
         float spin = uTime * 2.4 * infl * infl + str * 1.5;
-        float pullIn = 1.0 - 0.34 * str;
+        float pullIn = 1.0 - 0.50 * str;
         vec2 dxy = rot2(spin) * (d.xy * pullIn);
         pos += vec3(dxy - d.xy, 0.0);                       // 회전(소용돌이)
         float ringPull = infl * (1.0 - infl) * 4.0;
-        pos -= n * ringPull * str * 1.2;                    // 고리 쪽으로 모임
-        float coreP = 1.0 - smoothstep(0.0, uPointerRadius * 0.34, dist);
-        pos += n * coreP * str * 1.5;                       // 한가운데는 비움
+        pos -= n * ringPull * str * 1.6;                    // 고리 쪽으로 모임
+        float coreP = 1.0 - smoothstep(0.0, uPointerRadius * 0.20, dist);
+        pos += n * coreP * str * 1.4;                       // 한가운데는 비움
         pos.z += sin(dist * 2.2 - uTime * 2.6) * infl * str * 0.55;
-        glow = infl * uPointerStrength * 1.6 + coreP * str * 2.4;
+        glow = infl * uPointerStrength * 4.5 + coreP * str * 6.0;
       }
 
       /* ---- 5. 터치 파문 ---- */
@@ -359,7 +359,7 @@
       vec4 mv = modelViewMatrix * vec4(pos, 1.0);
       gl_Position = projectionMatrix * mv;
 
-      float size = aSize * (1.0 + 0.22 * uMorph) * (1.0 + infl * uPointerStrength * 1.5);
+      float size = aSize * (1.0 + 0.22 * uMorph) * (1.0 + infl * uPointerStrength * 3.0);
       gl_PointSize = clamp(size * uDPR * (26.0 / max(-mv.z, 0.1)), 0.9, 34.0);
 
       vColor = mix(aSnowColor, aTreeColor, uMorph) * (1.0 + uMorph * 0.12)
@@ -587,7 +587,7 @@
   for (let i = 0; i < TRAIL_N; i++) {
     const t = i / (TRAIL_N - 1);
     trailFade[i] = Math.pow(1 - t, 2.2);
-    trailSize[i] = 9.5 * (1 - t) + 1.2;
+    trailSize[i] = 13.0 * (1 - t) + 1.4;
   }
   const trailGeo = new THREE.BufferGeometry();
   trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3));
