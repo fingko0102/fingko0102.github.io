@@ -360,7 +360,8 @@
       float size = aSize * (1.0 + 0.22 * uMorph) * (1.0 + infl * uPointerStrength * 1.5);
       gl_PointSize = clamp(size * uDPR * (26.0 / max(-mv.z, 0.1)), 0.9, 34.0);
 
-      vColor = mix(aSnowColor, aTreeColor, uMorph) * (1.0 + uMorph * 0.12);
+      vColor = mix(aSnowColor, aTreeColor, uMorph) * (1.0 + uMorph * 0.12)
+             * (1.15 - 0.55 * smoothstep(9.0, 26.0, -mv.z));   // 깊이에 따른 밝기
       float tw = 0.55 + 0.45 * sin(uTime * (1.1 + aSpeed * 2.4) + aPhase * 6.2831);
       vAlpha = mix(0.34 + 0.32 * tw, 0.44 + 0.24 * tw, uMorph);
       vGlow = glow;
@@ -443,8 +444,9 @@
     const col = new THREE.Color();     // 눈 색
     const tcol = new THREE.Color();    // 트리 색
     const ORNAMENT = [
-      [1.00, 0.30, 0.32], [1.00, 0.80, 0.30], [0.42, 0.86, 1.00],
-      [1.00, 1.00, 1.00], [1.00, 0.52, 0.86], [0.62, 1.00, 0.72]
+      [1.00, 0.80, 0.32], [1.00, 0.80, 0.32], [1.00, 0.80, 0.32],   // 금빛 전구 위주
+      [1.00, 0.34, 0.34], [1.00, 0.34, 0.34],
+      [0.45, 0.80, 1.00], [1.00, 0.98, 0.90], [1.00, 0.56, 0.86]
     ];
 
     for (let i = 0; i < COUNT; i++) {
@@ -453,7 +455,7 @@
       let kind;
       if (r < 0.878) kind = 'leaf';
       else if (r < 0.930) kind = 'orn';
-      else if (r < 0.978) kind = 'star';
+      else if (r < 0.968) kind = 'star';
       else kind = 'trunk';
 
       let tx = 0, ty = 0, tz = 0, size = 1.4;
@@ -479,7 +481,7 @@
           // 가지에 얹힌 눈
           tcol.setHSL(0.56, 0.22, 0.72 + rnd() * 0.18);
         } else {
-          tcol.setHSL(0.32 + rnd() * 0.08, 0.55 + rnd() * 0.30, 0.15 + rnd() * 0.15);
+          tcol.setHSL(0.32 + rnd() * 0.08, 0.50 + rnd() * 0.30, 0.12 + rnd() * 0.14);
         }
         size = 0.85 + rnd() * 1.10;
 
@@ -513,8 +515,8 @@
         ty = BASE_Y + TREE_H + 0.95 + sy;
         tz = (rnd() - 0.5) * 0.30;
         const warm = rnd();
-        if (warm > 0.45) tcol.setHSL(0.125, 0.85, 0.72 + rnd() * 0.22);
-        else tcol.setHSL(0.13, 0.25, 0.90 + rnd() * 0.09);
+        if (warm > 0.30) tcol.setHSL(0.105 + rnd() * 0.025, 0.80, 0.52 + rnd() * 0.18);
+        else tcol.setHSL(0.12, 0.25, 0.82 + rnd() * 0.10);
         size = 1.5 + rnd() * 1.9;
 
       } else {
