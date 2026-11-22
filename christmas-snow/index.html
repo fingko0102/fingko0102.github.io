@@ -362,7 +362,7 @@
 
       vColor = mix(aSnowColor, aTreeColor, uMorph) * (1.0 + uMorph * 0.12);
       float tw = 0.55 + 0.45 * sin(uTime * (1.1 + aSpeed * 2.4) + aPhase * 6.2831);
-      vAlpha = mix(0.34 + 0.32 * tw, 0.60 + 0.24 * tw, uMorph);
+      vAlpha = mix(0.34 + 0.32 * tw, 0.44 + 0.24 * tw, uMorph);
       vGlow = glow;
     }
   `;
@@ -451,31 +451,37 @@
       const i3 = i * 3;
       const r = rnd();
       let kind;
-      if (r < 0.80) kind = 'leaf';
-      else if (r < 0.905) kind = 'orn';
-      else if (r < 0.962) kind = 'star';
+      if (r < 0.878) kind = 'leaf';
+      else if (r < 0.930) kind = 'orn';
+      else if (r < 0.978) kind = 'star';
       else kind = 'trunk';
 
       let tx = 0, ty = 0, tz = 0, size = 1.4;
 
       if (kind === 'leaf') {
         // 부피 균등 분포 + 표면 쪽으로 몰리게 → 입체감 있는 나무
-        const hf = 1 - Math.cbrt(rnd());                  // 0(아래) → 1(꼭대기)
-        const rMax = TREE_R * Math.pow(1 - hf, 0.92);
-        const shell = 0.66 + 0.34 * Math.sqrt(rnd());
+        const hf = 1 - Math.pow(rnd(), 0.5);              // 0(아래) → 1(꼭대기)
+        const rMax = TREE_R * Math.pow(1 - hf, 1.0);
+        // 껍질과 속을 섞어 입체감을 만든다
+        const shell = (rnd() < 0.58)
+          ? 0.74 + 0.26 * Math.sqrt(rnd())
+          : Math.pow(rnd(), 0.5);
         const rad = rMax * shell;
-        const th = hf * 12.0 + (rnd() - 0.5) * 1.35;      // 나선 갈래
+        // 대부분은 둘레 전체에 고르게, 일부는 나선 가지 자리에
+        const th = (rnd() < 0.32)
+          ? hf * 12.0 + (rnd() - 0.5) * 0.95
+          : rnd() * Math.PI * 2;
         tx = Math.cos(th) * rad + (rnd() - 0.5) * 0.10;
         tz = Math.sin(th) * rad + (rnd() - 0.5) * 0.10;
         ty = BASE_Y + hf * TREE_H + (rnd() - 0.5) * 0.08;
 
         if (rnd() > 0.87) {
           // 가지에 얹힌 눈
-          tcol.setHSL(0.56, 0.28, 0.80 + rnd() * 0.16);
+          tcol.setHSL(0.56, 0.22, 0.72 + rnd() * 0.18);
         } else {
-          tcol.setHSL(0.33 + rnd() * 0.07, 0.62 + rnd() * 0.34, 0.30 + rnd() * 0.24);
+          tcol.setHSL(0.32 + rnd() * 0.08, 0.55 + rnd() * 0.30, 0.15 + rnd() * 0.15);
         }
-        size = 0.85 + rnd() * 1.15;
+        size = 0.85 + rnd() * 1.10;
 
       } else if (kind === 'orn') {
         // 나선 장식(전구 줄)
@@ -487,7 +493,7 @@
         ty = BASE_Y + hf * TREE_H;
         const c = ORNAMENT[(rnd() * ORNAMENT.length) | 0];
         tcol.setRGB(c[0], c[1], c[2]);
-        size = 2.2 + rnd() * 2.2;
+        size = 1.5 + rnd() * 1.7;
 
       } else if (kind === 'star') {
         // 꼭대기 오각별 — 별 테두리를 따라 채움
@@ -501,7 +507,7 @@
         const r1 = ((seg + 1) % 2 === 0) ? RO : RI;
         let sx = Math.cos(a0) * r0 + (Math.cos(a1) * r1 - Math.cos(a0) * r0) * f;
         let sy = Math.sin(a0) * r0 + (Math.sin(a1) * r1 - Math.sin(a0) * r0) * f;
-        const shrink = 0.68 + 0.32 * Math.sqrt(rnd());
+        const shrink = Math.pow(rnd(), 0.45);   // 별 안쪽까지 채움
         sx *= shrink; sy *= shrink;
         tx = sx;
         ty = BASE_Y + TREE_H + 0.95 + sy;
@@ -517,7 +523,7 @@
         const rad = 0.10 + rnd() * 0.14;
         tx = Math.cos(th) * rad;
         tz = Math.sin(th) * rad;
-        ty = BASE_Y - 0.55 + rnd() * 1.15;
+        ty = BASE_Y - 0.35 + rnd() * 0.62;
         tcol.setHSL(0.08, 0.45, 0.20 + rnd() * 0.10);
         size = 0.9 + rnd() * 0.8;
       }
@@ -1291,7 +1297,15 @@
     get pixelRatio() { return renderer.getPixelRatio(); },
     get drawCalls() { return renderer.info.render.calls; },
     get drawParticles() { return geometry.attributes.aSize.count; },
-    setMode: (m) => setMode(m, 'user')
+    setMode: (m) => setMode(m, 'user'),
+    // 한 프레임당 렌더 시간(ms) 측정용
+    bench: (n = 30) => {
+      const gl = renderer.getContext();
+      const t0 = performance.now();
+      for (let i = 0; i < n; i++) renderer.render(scene, camera);
+      gl.finish();
+      return +((performance.now() - t0) / n).toFixed(2);
+    }
   };
   </script>
 </body>
