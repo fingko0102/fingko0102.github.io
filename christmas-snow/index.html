@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05070f">
+<title>❄️ 10만 개의 크리스마스 눈</title>
+<meta name="description" content="10만 개의 눈 입자로 그린 인터랙티브 크리스마스 아트. 손가락·마우스·카메라 손 인식으로 눈보라와 크리스마스 트리를 오갑니다.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9D%84%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --ink:#eaf2ff;
+    --muted:#9db0cd;
+    --glass:rgba(16,26,46,.62);
+    --line:rgba(150,190,255,.17);
+    --glow:rgba(120,180,255,.45);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{
+    margin:0;height:100%;overflow:hidden;background:#03050c;color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
+    -webkit-user-select:none;user-select:none;touch-action:none;overscroll-behavior:none;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(120% 78% at 50% 6%, rgba(46,88,158,.60) 0%, rgba(12,22,44,.72) 40%, rgba(3,5,12,1) 80%),
+      radial-gradient(55% 45% at 82% 102%, rgba(24,104,136,.22), transparent 70%),
+      radial-gradient(50% 40% at 14% 92%, rgba(96,60,140,.16), transparent 72%);
+  }
+  #scene{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:1}
+
+  header{
+    position:fixed;top:0;left:0;right:0;z-index:3;pointer-events:none;
+    padding:calc(13px + env(safe-area-inset-top)) 14px 22px;
+    display:flex;flex-direction:column;align-items:center;gap:9px;
+    background:linear-gradient(to bottom, rgba(3,5,12,.78) 0%, rgba(3,5,12,.35) 55%, transparent 100%);
+  }
+  h1{
+    margin:0;font-size:clamp(15px,4.3vw,23px);font-weight:750;letter-spacing:.01em;
+    text-align:center;text-shadow:0 0 26px rgba(150,195,255,.55),0 1px 2px rgba(0,0,0,.6);
+  }
+  .badges{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+  .badge{
+    font-size:11.5px;line-height:1;padding:6px 11px;border-radius:999px;
+    background:rgba(18,30,54,.66);border:1px solid var(--line);color:var(--muted);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    transition:color .25s,border-color .25s,box-shadow .25s;
+    white-space:nowrap;
+  }
+  .badge.on{color:#eef7ff;border-color:rgba(140,200,255,.5);box-shadow:0 0 18px rgba(90,160,255,.35),inset 0 0 12px rgba(90,160,255,.18)}
+  .badge.warm.on{color:#fff4dd;border-color:rgba(255,205,130,.5);box-shadow:0 0 18px rgba(255,180,90,.3),inset 0 0 12px rgba(255,190,110,.15)}
+
+  footer{
+    position:fixed;left:0;right:0;bottom:0;z-index:3;
+    padding:26px 10px calc(11px + env(safe-area-inset-bottom));
+    display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;
+    background:linear-gradient(to top, rgba(3,5,12,.86) 0%, rgba(3,5,12,.4) 55%, transparent 100%);
+  }
+  button{
+    font:inherit;font-size:clamp(11.5px,3.3vw,13.5px);font-weight:650;color:var(--ink);
+    padding:11px 14px;border-radius:14px;border:1px solid var(--line);
+    background:rgba(18,30,54,.64);cursor:pointer;
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    transition:transform .14s ease,background .2s,border-color .2s,box-shadow .25s;
+    display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+  }
+  button:hover{background:rgba(30,48,80,.76)}
+  button:active{transform:scale(.955)}
+  button.active{
+    border-color:rgba(140,200,255,.55);
+    background:rgba(32,64,116,.76);
+    box-shadow:0 0 0 1px rgba(140,200,255,.22),0 0 24px rgba(80,150,255,.35);
+  }
+  button.warm.active{
+    border-color:rgba(255,205,130,.55);
+    background:rgba(94,68,26,.7);
+    box-shadow:0 0 0 1px rgba(255,205,130,.25),0 0 24px rgba(255,175,80,.35);
+  }
+
+  #camwrap{
+    position:fixed;right:11px;bottom:calc(78px + env(safe-area-inset-bottom));z-index:2;
+    width:148px;border-radius:15px;overflow:hidden;border:1px solid var(--line);
+    background:#02040a;pointer-events:none;
+    opacity:0;transform:translateY(10px) scale(.95);transition:opacity .3s,transform .3s;
+    box-shadow:0 12px 34px rgba(0,0,0,.6),0 0 0 1px rgba(0,0,0,.3);
+  }
+  #camwrap.show{opacity:1;transform:none}
+  #cam{display:block;width:148px;height:111px;object-fit:cover;transform:scaleX(-1)}
+  #handcanvas{position:absolute;inset:0;width:148px;height:111px}
+  #camtag{
+    position:absolute;left:6px;top:6px;font-size:9.5px;letter-spacing:.02em;
+    padding:3px 7px;border-radius:999px;background:rgba(0,0,0,.5);color:#cfe4ff;
+    backdrop-filter:blur(4px);
+  }
+
+  #cursor{
+    position:fixed;left:0;top:0;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;
+    border:1.5px solid rgba(255,236,178,.95);z-index:4;pointer-events:none;opacity:0;
+    transition:opacity .2s;
+    box-shadow:0 0 20px rgba(255,214,120,.85),inset 0 0 14px rgba(255,230,170,.45);
+  }
+  #cursor::after{
+    content:"";position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;
+    background:#fff6dd;box-shadow:0 0 14px #ffdf8f;
+  }
+  #cursor.show{opacity:1}
+
+  #hint{
+    position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom));z-index:2;
+    transform:translateX(-50%);width:max-content;max-width:88vw;
+    font-size:12px;line-height:1.5;color:#b9cbe6;text-align:center;
+    padding:9px 14px;border-radius:12px;background:rgba(10,18,34,.6);border:1px solid var(--line);
+    backdrop-filter:blur(8px);opacity:0;transition:opacity .6s;pointer-events:none;
+  }
+  #hint.show{opacity:1}
+
+  #toast{
+    position:fixed;left:50%;top:calc(74px + env(safe-area-inset-top));z-index:6;
+    transform:translate(-50%,-8px);max-width:86vw;
+    font-size:12.5px;line-height:1.45;color:#e9f2ff;text-align:center;
+    padding:10px 15px;border-radius:13px;background:rgba(16,28,50,.9);border:1px solid var(--line);
+    box-shadow:0 10px 30px rgba(0,0,0,.45);
+    opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;
+  }
+  #toast.show{opacity:1;transform:translate(-50%,0)}
+
+  #loading{
+    position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:15px;background:#04070f;
+    transition:opacity .7s;color:#b9cbe6;font-size:12.5px;letter-spacing:.02em;
+  }
+  #loading.hide{opacity:0;pointer-events:none}
+  .spinner{
+    width:34px;height:34px;border-radius:50%;border:2px solid rgba(140,190,255,.18);
+    border-top-color:#a3ccff;animation:spin 1.05s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #loading .big{font-size:26px;filter:drop-shadow(0 0 16px rgba(160,200,255,.7))}
+  #fatal{display:none;max-width:80vw;text-align:center;line-height:1.6}
+</style>
+</head>
+<body>
+  <canvas id="scene" aria-label="10만 개의 눈 입자 아트"></canvas>
+
+  <header>
+    <h1>❄️ 10만 개의 크리스마스 눈</h1>
+    <div class="badges">
+      <span id="badgeMode" class="badge on">❄️ 눈보라</span>
+      <span id="badgeHand" class="badge">📷 카메라 꺼짐</span>
+      <span id="badgeCount" class="badge">✨ 100,000 입자</span>
+    </div>
+  </header>
+
+  <div id="camwrap">
+    <video id="cam" playsinline muted autoplay></video>
+    <canvas id="handcanvas" width="296" height="222"></canvas>
+    <span id="camtag">손 인식</span>
+  </div>
+
+  <div id="cursor"></div>
+  <div id="hint">드래그하거나 손가락을 움직여 보세요 · 아래 버튼으로 트리 ↔ 눈보라</div>
+  <div id="toast"></div>
+
+  <footer>
+    <button id="btnCam" type="button">📷 카메라 손 인식 켜기</button>
+    <button id="btnMode" type="button">🎄 트리 모으기</button>
+    <button id="btnMusic" type="button" class="warm">🔔 오르골 소리</button>
+  </footer>
+
+  <div id="loading">
+    <div class="big">❄️</div>
+    <div class="spinner"></div>
+    <div id="loadingText">100,000개의 눈을 만들고 있어요…</div>
+    <div id="fatal"></div>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js"
+    }
+  }
+  </script>
+
+  <script>
+  // 실행 중 오류를 모아 두는 작은 기록(문제 진단용). 화면에는 나오지 않습니다.
+  window.__snowErrors = [];
+  window.addEventListener('error', function (e) {
+    window.__snowErrors.push('error: ' + (e.message || 'unknown'));
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    var r = e.reason;
+    window.__snowErrors.push('rejection: ' + ((r && r.message) || String(r)));
+  });
+  </script>
+
+  <script type="module">
+  import * as THREE from 'three';
+
+  /* =========================================================
+     10만 개의 크리스마스 눈 — Three.js + GLSL, MediaPipe Hand Landmarker
+     ========================================================= */
+
+  const COUNT       = 100000;              // 눈 입자 개수
+  const MP_VERSION  = '0.10.14';
+  const MP_WASM     = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VERSION}/wasm`;
+  const MP_BUNDLE   = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VERSION}/vision_bundle.mjs`;
+  const MP_MODEL    = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+
+  const $ = (id) => document.getElementById(id);
+  const canvas = $('scene');
+  const video = $('cam');
+  const handCanvas = $('handcanvas');
+  const handCtx = handCanvas.getContext('2d');
+  const cursorEl = $('cursor');
+  const toastEl = $('toast');
+  const hintEl = $('hint');
+  const btnCam = $('btnCam');
+  const btnMode = $('btnMode');
+  const btnMusic = $('btnMusic');
+  const badgeMode = $('badgeMode');
+  const badgeHand = $('badgeHand');
+  const badgeCount = $('badgeCount');
+  const loadingEl = $('loading');
+  const loadingText = $('loadingText');
+  const fatalEl = $('fatal');
+
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+
+  function toast(msg, ms = 2600) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => toastEl.classList.remove('show'), ms);
+  }
+
+  /* ---------- 결정론적 난수 (같은 트리가 매번 재현되도록) ---------- */
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  const rnd = mulberry32(20251225);
+
+  /* =========================================================
+     렌더러 · 카메라 · 씬
+     ========================================================= */
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: false,
+      alpha: true,
+      depth: false,
+      stencil: false,
+      powerPreference: 'high-performance',
+      preserveDrawingBuffer: true
+    });
+  } catch (err) {
+    window.__snowErrors.push('webgl: ' + err.message);
+    fatalEl.style.display = 'block';
+    fatalEl.textContent = '이 브라우저에서는 WebGL을 쓸 수 없어요. 최신 Chrome·Safari·Edge에서 열어 주세요.';
+    loadingText.textContent = 'WebGL을 시작하지 못했어요';
+    document.querySelector('#loading .spinner').style.display = 'none';
+    throw err;
+  }
+
+  renderer.setClearColor(0x000000, 0);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 400);
+
+  const isWebGL2 = !!(renderer.capabilities && renderer.capabilities.isWebGL2);
+
+  /* =========================================================
+     셰이더
+     ========================================================= */
+  const vertexShader = /* glsl */`
+    attribute vec3  aSnow;       // -1..1 정규화된 눈 시작 위치
+    attribute vec3  aSnowColor;
+    attribute vec3  aTreeColor;
+    attribute vec3  aChaos;      // 모프 중 흩날림 방향
+    attribute float aSize;
+    attribute float aPhase;
+    attribute float aSpeed;
+
+    uniform float uTime;
+    uniform float uMorph;        // 0 = 눈보라, 1 = 트리
+    uniform vec3  uBox;          // 화면에 꽉 차는 눈 상자 크기
+    uniform vec3  uPointer;      // 손끝/포인터 월드 좌표
+    uniform float uPointerStrength;
+    uniform float uPointerRadius;
+    uniform float uTreeSpin;
+    uniform float uChaosAmt;
+    uniform float uDPR;
+    uniform vec4  uWave;         // xyz 시작점, w 시작 시각
+
+    varying vec3  vColor;
+    varying float vGlow;
+    varying float vAlpha;
+
+    mat2 rot2(float a){ float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }
+
+    void main(){
+      /* ---- 1. 눈: 아래로 내리며 화면을 가득 채우고, 바람에 흔들림 ---- */
+      float fall = mod(aSnow.y - uTime * (0.030 + aSpeed * 0.048) + aPhase, 2.0) - 1.0;
+      vec3 sp;
+      sp.x = aSnow.x * uBox.x + sin(uTime * 0.52 + aPhase * 6.2831 + fall * 3.2) * (0.20 + 0.32 * aSpeed);
+      sp.y = fall * uBox.y;
+      sp.z = aSnow.z * uBox.z + cos(uTime * 0.44 + aPhase * 5.1) * 0.30;
+      sp.x += sin(sp.y * 0.52 + uTime * 0.38) * 0.95;   // 큰 파도(바람)
+
+      /* ---- 2. 트리: 미리 계산해 둔 자리를 천천히 회전 ---- */
+      vec3 tp = position;
+      tp.xz = rot2(uTreeSpin) * tp.xz;
+
+      /* ---- 3. 두 형태 사이를 부드럽게 보간 + 변하는 동안 흩날림 ---- */
+      vec3 pos = mix(sp, tp, uMorph);
+      pos += aChaos * uChaosAmt;
+
+      /* ---- 4. 손끝/포인터 소용돌이 ---- */
+      vec3 d = pos - uPointer;
+      float dist = length(d);
+      float infl = 1.0 - smoothstep(0.0, uPointerRadius, dist);
+      float str = infl * uPointerStrength;
+      float glow = 0.0;
+      if (str > 0.0015) {
+        vec3 n = d / max(dist, 0.0001);
+        float ang = str * 2.45;
+        vec2 dxy = rot2(ang) * d.xy;
+        pos += vec3(dxy - d.xy, 0.0);                       // 회전(소용돌이)
+        float ringPull = infl * (1.0 - infl) * 4.0;
+        pos -= n * ringPull * str * 0.62;                   // 고리 쪽으로 모임
+        float coreP = 1.0 - smoothstep(0.0, uPointerRadius * 0.30, dist);
+        pos += n * coreP * str * 0.9;                       // 한가운데는 비움
+        pos.z += sin(dist * 2.2 - uTime * 2.6) * infl * str * 0.45;
+        glow = infl * uPointerStrength * 1.9 + coreP * str * 1.8;
+      }
+
+      /* ---- 5. 터치 파문 ---- */
+      float wt = uTime - uWave.w;
+      if (wt > 0.0 && wt < 2.2) {
+        float wr = wt * 8.5;
+        float dd = length(pos - uWave.xyz);
+        float ring = 1.0 - abs(dd - wr) / 1.7;
+        ring = max(ring, 0.0); ring = ring * ring * (1.0 - wt / 2.2);
+        pos += normalize(pos - uWave.xyz + vec3(0.0001, 0.0001, 0.0001)) * ring * 1.15;
+        glow += ring * 2.2;
+      }
+
+      vec4 mv = modelViewMatrix * vec4(pos, 1.0);
+      gl_Position = projectionMatrix * mv;
+
+      float size = aSize * (1.0 + 0.22 * uMorph) * (1.0 + infl * uPointerStrength * 1.5);
+      gl_PointSize = clamp(size * uDPR * (26.0 / max(-mv.z, 0.1)), 0.9, 34.0);
+
+      vColor = mix(aSnowColor, aTreeColor, uMorph) * (1.0 + uMorph * 0.12);
+      float tw = 0.55 + 0.45 * sin(uTime * (1.1 + aSpeed * 2.4) + aPhase * 6.2831);
+      vAlpha = mix(0.34 + 0.32 * tw, 0.60 + 0.24 * tw, uMorph);
+      vGlow = glow;
+    }
+  `;
+
+  const fragmentShader = /* glsl */`
+    uniform float uShapeMix;   // 0 = 둥근 점, 1 = 눈송이
+    varying vec3  vColor;
+    varying float vGlow;
+    varying float vAlpha;
+
+    void main(){
+      vec2 uv = gl_PointCoord - 0.5;
+      float r2 = dot(uv, uv);
+      if (r2 > 0.25) discard;
+      float r = sqrt(r2) * 2.0;
+
+      float core = 1.0 - smoothstep(0.25, 1.0, r);
+      core *= core;
+
+      float ang = atan(uv.y, uv.x);
+      float arms = pow(abs(cos(ang * 3.0)), 6.0);
+      float flake = arms * (1.0 - smoothstep(0.35, 1.0, r));
+
+      float cross = max(1.0 - abs(uv.x) * 15.0, 0.0) + max(1.0 - abs(uv.y) * 15.0, 0.0);
+      cross *= (1.0 - smoothstep(0.3, 1.0, r));
+
+      float shape = core * (1.0 - uShapeMix * 0.42) + (flake * 1.25 + cross * 0.5) * uShapeMix;
+      float a = shape * vAlpha;
+      if (a < 0.004) discard;
+
+      vec3 col = vColor * (1.0 + vGlow * 1.7);
+      gl_FragColor = vec4(col, a);
+    }
+  `;
+
+  const uniforms = {
+    uTime:            { value: 0 },
+    uMorph:           { value: 0 },
+    uBox:             { value: new THREE.Vector3(14, 8, 10) },
+    uPointer:         { value: new THREE.Vector3(0, 0, 0) },
+    uPointerStrength: { value: 0 },
+    uPointerRadius:   { value: 4 },
+    uTreeSpin:        { value: 0 },
+    uChaosAmt:        { value: 0 },
+    uDPR:             { value: 1 },
+    uWave:            { value: new THREE.Vector4(0, 0, 0, -99) },
+    uShapeMix:        { value: 0.9 }
+  };
+
+  const material = new THREE.ShaderMaterial({
+    uniforms,
+    vertexShader,
+    fragmentShader,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthTest: false,
+    depthWrite: false
+  });
+
+  /* =========================================================
+     지오메트리 — 10만 입자 + 3D 트리 좌표
+     ========================================================= */
+  const BASE_Y = -4.6;   // 트리 밑동
+  const TREE_H = 8.0;    // 트리 높이
+  const TREE_R = 3.3;    // 밑동 반지름
+
+  function buildGeometry() {
+    const g = new THREE.BufferGeometry();
+    const pos        = new Float32Array(COUNT * 3); // 트리 좌표 (position)
+    const aSnow      = new Float32Array(COUNT * 3);
+    const aSnowColor = new Float32Array(COUNT * 3);
+    const aTreeColor = new Float32Array(COUNT * 3);
+    const aChaos     = new Float32Array(COUNT * 3);
+    const aSize      = new Float32Array(COUNT);
+    const aPhase     = new Float32Array(COUNT);
+    const aSpeed     = new Float32Array(COUNT);
+
+    const col = new THREE.Color();     // 눈 색
+    const tcol = new THREE.Color();    // 트리 색
+    const ORNAMENT = [
+      [1.00, 0.30, 0.32], [1.00, 0.80, 0.30], [0.42, 0.86, 1.00],
+      [1.00, 1.00, 1.00], [1.00, 0.52, 0.86], [0.62, 1.00, 0.72]
+    ];
+
+    for (let i = 0; i < COUNT; i++) {
+      const i3 = i * 3;
+      const r = rnd();
+      let kind;
+      if (r < 0.80) kind = 'leaf';
+      else if (r < 0.905) kind = 'orn';
+      else if (r < 0.962) kind = 'star';
+      else kind = 'trunk';
+
+      let tx = 0, ty = 0, tz = 0, size = 1.4;
+
+      if (kind === 'leaf') {
+        // 부피 균등 분포 + 표면 쪽으로 몰리게 → 입체감 있는 나무
+        const hf = 1 - Math.cbrt(rnd());                  // 0(아래) → 1(꼭대기)
+        const rMax = TREE_R * Math.pow(1 - hf, 0.92);
+        const shell = 0.66 + 0.34 * Math.sqrt(rnd());
+        const rad = rMax * shell;
+        const th = hf * 12.0 + (rnd() - 0.5) * 1.35;      // 나선 갈래
+        tx = Math.cos(th) * rad + (rnd() - 0.5) * 0.10;
+        tz = Math.sin(th) * rad + (rnd() - 0.5) * 0.10;
+        ty = BASE_Y + hf * TREE_H + (rnd() - 0.5) * 0.08;
+
+        if (rnd() > 0.87) {
+          // 가지에 얹힌 눈
+          tcol.setHSL(0.56, 0.28, 0.80 + rnd() * 0.16);
+        } else {
+          tcol.setHSL(0.33 + rnd() * 0.07, 0.62 + rnd() * 0.34, 0.30 + rnd() * 0.24);
+        }
+        size = 0.85 + rnd() * 1.15;
+
+      } else if (kind === 'orn') {
+        // 나선 장식(전구 줄)
+        const hf = Math.pow(rnd(), 0.92);
+        const th = hf * 12.0;
+        const rad = TREE_R * Math.pow(1 - hf, 0.92) * 1.03;
+        tx = Math.cos(th) * rad + (rnd() - 0.5) * 0.09;
+        tz = Math.sin(th) * rad + (rnd() - 0.5) * 0.09;
+        ty = BASE_Y + hf * TREE_H;
+        const c = ORNAMENT[(rnd() * ORNAMENT.length) | 0];
+        tcol.setRGB(c[0], c[1], c[2]);
+        size = 2.2 + rnd() * 2.2;
+
+      } else if (kind === 'star') {
+        // 꼭대기 오각별 — 별 테두리를 따라 채움
+        const k = rnd() * 10;
+        const seg = Math.floor(k);
+        const f = k - seg;
+        const a0 = seg / 10 * Math.PI * 2 - Math.PI / 2;
+        const a1 = (seg + 1) / 10 * Math.PI * 2 - Math.PI / 2;
+        const RO = 1.05, RI = 0.42;
+        const r0 = (seg % 2 === 0) ? RO : RI;
+        const r1 = ((seg + 1) % 2 === 0) ? RO : RI;
+        let sx = Math.cos(a0) * r0 + (Math.cos(a1) * r1 - Math.cos(a0) * r0) * f;
+        let sy = Math.sin(a0) * r0 + (Math.sin(a1) * r1 - Math.sin(a0) * r0) * f;
+        const shrink = 0.68 + 0.32 * Math.sqrt(rnd());
+        sx *= shrink; sy *= shrink;
+        tx = sx;
+        ty = BASE_Y + TREE_H + 0.95 + sy;
+        tz = (rnd() - 0.5) * 0.30;
+        const warm = rnd();
+        if (warm > 0.45) tcol.setHSL(0.125, 0.85, 0.72 + rnd() * 0.22);
+        else tcol.setHSL(0.13, 0.25, 0.90 + rnd() * 0.09);
+        size = 1.5 + rnd() * 1.9;
+
+      } else {
+        // 줄기
+        const th = rnd() * Math.PI * 2;
+        const rad = 0.10 + rnd() * 0.14;
+        tx = Math.cos(th) * rad;
+        tz = Math.sin(th) * rad;
+        ty = BASE_Y - 0.55 + rnd() * 1.15;
+        tcol.setHSL(0.08, 0.45, 0.20 + rnd() * 0.10);
+        size = 0.9 + rnd() * 0.8;
+      }
+
+      pos[i3] = tx; pos[i3 + 1] = ty; pos[i3 + 2] = tz;
+
+      // 눈 시작 위치(정규화 상자) — 구형에 가깝게 퍼뜨려 화면 어디에나
+      aSnow[i3]     = rnd() * 2 - 1;
+      aSnow[i3 + 1] = rnd() * 2 - 1;
+      aSnow[i3 + 2] = rnd() * 2 - 1;
+
+      // 눈 색: 흰색 ~ 옅은 얼음빛
+      const w = rnd();
+      if (w > 0.86) col.setHSL(0.56, 0.55 + rnd() * 0.3, 0.80 + rnd() * 0.15);
+      else if (w > 0.6) col.setHSL(0.58, 0.22, 0.90 + rnd() * 0.10);
+      else col.setHSL(0.60, 0.06 + rnd() * 0.10, 0.94 + rnd() * 0.06);
+      aSnowColor[i3] = col.r; aSnowColor[i3 + 1] = col.g; aSnowColor[i3 + 2] = col.b;
+
+      aTreeColor[i3] = tcol.r; aTreeColor[i3 + 1] = tcol.g; aTreeColor[i3 + 2] = tcol.b;
+
+      // 흩날림 방향
+      const theta = rnd() * Math.PI * 2;
+      const phi = Math.acos(rnd() * 2 - 1);
+      const mag = 0.35 + rnd() * 1.15;
+      aChaos[i3]     = Math.sin(phi) * Math.cos(theta) * mag;
+      aChaos[i3 + 1] = Math.cos(phi) * mag;
+      aChaos[i3 + 2] = Math.sin(phi) * Math.sin(theta) * mag;
+
+      aSize[i]  = size;
+      aPhase[i] = rnd();
+      aSpeed[i] = 0.45 + rnd() * 1.25;
+    }
+
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('aSnow', new THREE.BufferAttribute(aSnow, 3));
+    g.setAttribute('aSnowColor', new THREE.BufferAttribute(aSnowColor, 3));
+    g.setAttribute('aTreeColor', new THREE.BufferAttribute(aTreeColor, 3));
+    g.setAttribute('aChaos', new THREE.BufferAttribute(aChaos, 3));
+    g.setAttribute('aSize', new THREE.BufferAttribute(aSize, 1));
+    g.setAttribute('aPhase', new THREE.BufferAttribute(aPhase, 1));
+    g.setAttribute('aSpeed', new THREE.BufferAttribute(aSpeed, 1));
+    return g;
+  }
+
+  const geometry = buildGeometry();
+  const points = new THREE.Points(geometry, material);
+  points.frustumCulled = false;      // 눈은 화면 밖까지 퍼지므로 컬링하지 않음
+  scene.add(points);
+
+  /* =========================================================
+     손끝 궤적(빛의 잔상)
+     ========================================================= */
+  const TRAIL_N = 220;
+  const trailPos = new Float32Array(TRAIL_N * 3);
+  const trailFade = new Float32Array(TRAIL_N);
+  const trailSize = new Float32Array(TRAIL_N);
+  for (let i = 0; i < TRAIL_N; i++) {
+    const t = i / (TRAIL_N - 1);
+    trailFade[i] = Math.pow(1 - t, 2.2);
+    trailSize[i] = 9.5 * (1 - t) + 1.2;
+  }
+  const trailGeo = new THREE.BufferGeometry();
+  trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3));
+  trailGeo.setAttribute('aFade', new THREE.BufferAttribute(trailFade, 1));
+  trailGeo.setAttribute('aSizeT', new THREE.BufferAttribute(trailSize, 1));
+
+  const trailMat = new THREE.ShaderMaterial({
+    uniforms: { uDPR: { value: 1 }, uOpacity: { value: 0 } },
+    vertexShader: /* glsl */`
+      attribute float aFade;
+      attribute float aSizeT;
+      uniform float uDPR;
+      uniform float uOpacity;
+      varying float vA;
+      void main(){
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        gl_Position = projectionMatrix * mv;
+        gl_PointSize = clamp(aSizeT * uDPR * (26.0 / max(-mv.z, 0.1)), 1.0, 46.0);
+        vA = aFade * uOpacity;
+      }
+    `,
+    fragmentShader: /* glsl */`
+      varying float vA;
+      void main(){
+        vec2 uv = gl_PointCoord - 0.5;
+        float r = length(uv) * 2.0;
+        if (r > 1.0) discard;
+        float a = (1.0 - r);
+        a = a * a * vA;
+        gl_FragColor = vec4(1.0, 0.94, 0.80, a);
+      }
+    `,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthTest: false,
+    depthWrite: false
+  });
+  const trail = new THREE.Points(trailGeo, trailMat);
+  trail.frustumCulled = false;
+  scene.add(trail);
+
+  /* =========================================================
+     레이아웃 / 리사이즈
+     ========================================================= */
+  let dprCap = 2;
+  let qualityStep = 0;
+
+  function layout() {
+    const w = Math.max(window.innerWidth, 1);
+    const h = Math.max(window.innerHeight, 1);
+    const aspect = w / h;
+
+    camera.aspect = aspect;
+    const tanHalf = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+    let z = 15;
+    // 세로 화면에서는 트리가 잘리지 않게 조금 물러난다
+    if (z * tanHalf * aspect < 4.4) z = 4.4 / (tanHalf * aspect);
+    camera.position.set(0, 0, z);
+    camera.lookAt(0, 0, 0);
+    camera.updateProjectionMatrix();
+    camera.updateMatrixWorld();
+
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, dprCap));
+    renderer.setSize(w, h, false);
+
+    const halfH = z * tanHalf;
+    const halfW = halfH * aspect;
+    uniforms.uBox.value.set(halfW * 1.14, halfH * 1.10, Math.min(halfW, halfH) * 0.85);
+    uniforms.uDPR.value = renderer.getPixelRatio();
+    trailMat.uniforms.uDPR.value = renderer.getPixelRatio();
+    uniforms.uPointerRadius.value = clamp(halfW * 0.42, 2.2, 5.4);
+  }
+  layout();
+  window.addEventListener('resize', layout);
+  window.addEventListener('orientationchange', () => setTimeout(layout, 220));
+
+  /* =========================================================
+     상태
+     ========================================================= */
+  let mode = 'snow';           // 'snow' | 'tree'
+  let morph = 0;               // 현재 보간값
+  let morphProgress = 0;       // 트리로 가는 진행도(카오스 계산용)
+  let strength = 0;
+  let strengthTarget = 0;
+  let lastPointerMove = 0;
+  let time = 0;
+  let running = true;
+
+  const pointerWorld = new THREE.Vector3(0, 0, 0);
+  const targetNDC = new THREE.Vector2(0, 0);
+  const smoothNDC = new THREE.Vector2(0, 0);
+  const ndcVec = new THREE.Vector3();
+  const dirVec = new THREE.Vector3();
+  const tmpV = new THREE.Vector3();
+  let pointerHasPos = false;
+
+  function screenToWorld(nx, ny, out) {
+    ndcVec.set(nx, ny, 0.5).unproject(camera);
+    dirVec.copy(ndcVec).sub(camera.position).normalize();
+    const t = -camera.position.z / (dirVec.z || -1e-6);
+    out.copy(camera.position).addScaledVector(dirVec, t);
+    return out;
+  }
+
+  function setMode(next, source) {
+    if (mode === next) {
+      updateModeUI();
+      return;
+    }
+    mode = next;
+    updateModeUI();
+    if (source === 'gesture') {
+      toast(next === 'tree' ? '✊ 주먹을 쥐었어요 — 크리스마스 트리!' : '🖐 손을 펼쳤어요 — 눈보라!', 2000);
+    }
+    if (music.on && mode === 'tree') music.chime();
+  }
+
+  function updateModeUI() {
+    const tree = mode === 'tree';
+    badgeMode.textContent = tree ? '🎄 크리스마스 트리' : '❄️ 눈보라';
+    btnMode.textContent = tree ? '❄️ 눈보라' : '🎄 트리 모으기';
+    btnMode.classList.toggle('active', tree);
+    hintEl.classList.remove('show');
+  }
+  updateModeUI();
+
+  /* =========================================================
+     포인터(마우스/터치) 입력
+     ========================================================= */
+  function pointerFromEvent(e) {
+    const nx = (e.clientX / window.innerWidth) * 2 - 1;
+    const ny = -((e.clientY / window.innerHeight) * 2 - 1);
+    targetNDC.set(nx, ny);
+    pointerHasPos = true;
+    smoothNDC.copy(targetNDC);
+    screenToWorld(nx, ny, pointerWorld);
+    lastPointerMove = performance.now();
+    strengthTarget = 1;
+  }
+
+  canvas.addEventListener('pointermove', (e) => {
+    if (e.pointerType === 'touch') return;
+    pointerFromEvent(e);
+  }, { passive: true });
+
+  canvas.addEventListener('pointerdown', (e) => {
+    pointerFromEvent(e);
+    uniforms.uWave.value.set(pointerWorld.x, pointerWorld.y, pointerWorld.z, time);
+    strengthTarget = 1;
+    canvas.setPointerCapture && e.pointerId != null && canvas.setPointerCapture(e.pointerId);
+  }, { passive: true });
+
+  canvas.addEventListener('pointerup', () => {
+    lastPointerMove = performance.now();
+  }, { passive: true });
+
+  canvas.addEventListener('pointerleave', () => {
+    if (handActive) return;
+    lastPointerMove = performance.now() - 1200;
+  });
+
+  canvas.addEventListener('touchmove', (e) => {
+    const t = e.touches[0];
+    if (!t) return;
+    pointerFromEvent({ clientX: t.clientX, clientY: t.clientY });
+  }, { passive: true });
+
+  canvas.addEventListener('dblclick', () => setMode(mode === 'tree' ? 'snow' : 'tree', 'user'));
+
+  /* =========================================================
+     손 인식 (MediaPipe Hand Landmarker)
+     ========================================================= */
+  let handLandmarker = null;
+  let FilesetResolverNS = null;
+  let HandLandmarkerNS = null;
+  let stream = null;
+  let camOn = false;
+  let camStarting = false;
+  let handActive = false;
+  let lastHandSeen = 0;
+  let lastDetect = 0;
+  let lastVideoTime = -1;
+  let handFps = 0;
+  let handFpsAcc = 0, handFpsN = 0, handFpsT = 0;
+
+  const HAND_CONNECTIONS = [
+    [0,1],[1,2],[2,3],[3,4],
+    [0,5],[5,6],[6,7],[7,8],
+    [5,9],[9,10],[10,11],[11,12],
+    [9,13],[13,14],[14,15],[15,16],
+    [13,17],[17,18],[18,19],[19,20],[0,17]
+  ];
+
+  function setHandBadge(text, on) {
+    badgeHand.textContent = text;
+    badgeHand.classList.toggle('on', !!on);
+  }
+
+  function dist2(a, b) {
+    const dx = a.x - b.x, dy = a.y - b.y, dz = (a.z || 0) - (b.z || 0);
+    return Math.sqrt(dx * dx + dy * dy + dz * dz);
+  }
+
+  function fingerCount(lm) {
+    const wrist = lm[0];
+    let ext = 0;
+    const tips = [8, 12, 16, 20];
+    const pips = [6, 10, 14, 18];
+    for (let i = 0; i < 4; i++) {
+      if (dist2(lm[tips[i]], wrist) > dist2(lm[pips[i]], wrist) * 1.13) ext++;
+    }
+    // 엄지: 손끝이 새끼손가락 밑동에서 충분히 멀면 펴진 것
+    if (dist2(lm[4], lm[17]) > dist2(lm[2], lm[17]) * 1.18) ext++;
+    return ext;
+  }
+
+  let gestureCandidate = null;
+  let gestureSince = 0;
+
+  function updateGesture(lm) {
+    const ext = fingerCount(lm);
+    let want = null;
+    if (ext <= 1) want = 'tree';        // 주먹 → 트리
+    else if (ext >= 4) want = 'snow';   // 손 펼치기 → 눈보라
+
+    if (!want) { gestureCandidate = null; return; }
+    if (gestureCandidate !== want) {
+      gestureCandidate = want;
+      gestureSince = performance.now();
+      return;
+    }
+    if (performance.now() - gestureSince > 420 && mode !== want) {
+      setMode(want, 'gesture');
+    }
+  }
+
+  function drawHand(lm) {
+    const w = handCanvas.width, h = handCanvas.height;
+    handCtx.clearRect(0, 0, w, h);
+    if (!lm) return;
+    // 영상이 거울처럼 보이므로 x 를 뒤집어 그린다
+    const px = (p) => (1 - p.x) * w;
+    const py = (p) => p.y * h;
+
+    handCtx.lineWidth = 3;
+    handCtx.strokeStyle = 'rgba(150,205,255,.75)';
+    handCtx.beginPath();
+    for (const [a, b] of HAND_CONNECTIONS) {
+      handCtx.moveTo(px(lm[a]), py(lm[a]));
+      handCtx.lineTo(px(lm[b]), py(lm[b]));
+    }
+    handCtx.stroke();
+
+    for (let i = 0; i < lm.length; i++) {
+      const isTip = (i === 4 || i === 8 || i === 12 || i === 16 || i === 20);
+      handCtx.beginPath();
+      handCtx.arc(px(lm[i]), py(lm[i]), isTip ? 5.5 : 3, 0, Math.PI * 2);
+      handCtx.fillStyle = isTip ? 'rgba(255,232,160,.98)' : 'rgba(210,235,255,.85)';
+      handCtx.shadowColor = isTip ? 'rgba(255,215,120,.95)' : 'rgba(140,200,255,.8)';
+      handCtx.shadowBlur = isTip ? 14 : 7;
+      handCtx.fill();
+    }
+    handCtx.shadowBlur = 0;
+  }
+
+  function handleHand(result) {
+    const now = performance.now();
+    if (result && result.landmarks && result.landmarks.length) {
+      const lm = result.landmarks[0];
+      lastHandSeen = now;
+      if (!handActive) {
+        handActive = true;
+        cursorEl.classList.add('show');
+        setHandBadge('✋ 손 인식 중', true);
+      }
+
+      // 검지 끝(8번) → 화면 좌표 (영상은 거울 모드)
+      const tip = lm[8];
+      const nx = 1 - tip.x;
+      const ny = tip.y;
+      const ndcX = clamp(nx * 2 - 1, -1.08, 1.08);
+      const ndcY = clamp(-(ny * 2 - 1), -1.08, 1.08);
+      targetNDC.set(ndcX, ndcY);
+      pointerHasPos = true;
+      lastPointerMove = now;
+      strengthTarget = 1;
+
+      cursorEl.style.left = (nx * window.innerWidth) + 'px';
+      cursorEl.style.top = (ny * window.innerHeight) + 'px';
+
+      updateGesture(lm);
+      drawHand(lm);
+
+      handFpsAcc++; handFpsN++;
+      if (now - handFpsT > 700) {
+        handFps = Math.round(handFpsN / ((now - handFpsT) / 1000));
+        handFpsAcc = 0; handFpsN = 0; handFpsT = now;
+      }
+    } else {
+      if (handActive && now - lastHandSeen > 600) {
+        handActive = false;
+        cursorEl.classList.remove('show');
+        setHandBadge(camOn ? '🖐 손을 기다리는 중' : '📷 카메라 꺼짐', false);
+        drawHand(null);
+        gestureCandidate = null;
+        strengthTarget = 0;
+      }
+    }
+  }
+
+  async function ensureLandmarker() {
+    if (handLandmarker) return;
+    if (!FilesetResolverNS) {
+      const mod = await import(MP_BUNDLE);
+      FilesetResolverNS = mod.FilesetResolver;
+      HandLandmarkerNS = mod.HandLandmarker;
+    }
+    const fileset = await FilesetResolverNS.forVisionTasks(MP_WASM);
+    const base = {
+      modelAssetPath: MP_MODEL,
+      delegate: 'GPU'
+    };
+    const opts = {
+      baseOptions: base,
+      runningMode: 'VIDEO',
+      numHands: 1,
+      minHandDetectionConfidence: 0.5,
+      minHandPresenceConfidence: 0.5,
+      minTrackingConfidence: 0.5
+    };
+    try {
+      handLandmarker = await HandLandmarkerNS.createFromOptions(fileset, opts);
+    } catch (e) {
+      opts.baseOptions = { modelAssetPath: MP_MODEL, delegate: 'CPU' };
+      handLandmarker = await HandLandmarkerNS.createFromOptions(fileset, opts);
+    }
+  }
+
+  async function startCamera() {
+    if (camStarting || camOn) return;
+    camStarting = true;
+    btnCam.disabled = true;
+    btnCam.textContent = '📷 카메라 준비 중…';
+    setHandBadge('⏳ 카메라 준비 중', false);
+
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('getUserMedia 없음');
+      }
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'user',
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          frameRate: { ideal: 30, max: 30 }
+        },
+        audio: false
+      });
+      video.srcObject = stream;
+      await video.play().catch(() => {});
+      await new Promise((res) => {
+        if (video.readyState >= 1) return res();
+        video.onloadedmetadata = () => res();
+        setTimeout(res, 2500);
+      });
+
+      const miniW = 148;
+      const ratio = (video.videoHeight || 480) / (video.videoWidth || 640);
+      video.style.height = Math.round(miniW * ratio) + 'px';
+      handCanvas.style.height = Math.round(miniW * ratio) + 'px';
+      handCanvas.width = Math.round(miniW * 2);
+      handCanvas.height = Math.round(miniW * ratio * 2);
+
+      setHandBadge('⏳ 손 인식 모델 불러오는 중', false);
+      await ensureLandmarker();
+
+      camOn = true;
+      $('camwrap').classList.add('show');
+      btnCam.textContent = '📷 카메라 끄기';
+      btnCam.classList.add('active');
+      setHandBadge('🖐 손을 기다리는 중', false);
+      toast('손을 카메라 앞에 보여 주세요. 주먹을 쥐면 트리, 손을 펴면 눈보라!', 3600);
+    } catch (err) {
+      window.__snowErrors.push('camera: ' + (err && err.message));
+      stopCamera(true);
+      setHandBadge('📷 카메라 꺼짐', false);
+      const denied = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
+      toast(denied
+        ? '카메라 권한이 거부되었어요. 마우스·터치로도 모든 게 똑같이 작동해요.'
+        : '카메라를 열 수 없어요. 마우스·터치로도 모든 게 똑같이 작동해요.', 4200);
+    } finally {
+      camStarting = false;
+      btnCam.disabled = false;
+      if (!camOn) btnCam.textContent = '📷 카메라 손 인식 켜기';
+    }
+  }
+
+  function stopCamera(silent) {
+    camOn = false;
+    handActive = false;
+    handFps = 0;
+    if (stream) {
+      stream.getTracks().forEach((t) => t.stop());
+      stream = null;
+    }
+    video.srcObject = null;
+    $('camwrap').classList.remove('show');
+    cursorEl.classList.remove('show');
+    handCtx.clearRect(0, 0, handCanvas.width, handCanvas.height);
+    btnCam.textContent = '📷 카메라 손 인식 켜기';
+    btnCam.classList.remove('active');
+    if (!silent) setHandBadge('📷 카메라 꺼짐', false);
+    strengthTarget = 0;
+    gestureCandidate = null;
+  }
+
+  /* =========================================================
+     오르골 (Web Audio API 로 직접 합성)
+     ========================================================= */
+  const music = {
+    ctx: null,
+    master: null,
+    wet: null,
+    timer: null,
+    index: 0,
+    nextTime: 0,
+    on: false,
+    bpm: 96,
+    // 징글벨 멜로디 (MIDI 번호, 박자)
+    melody: [
+      [64,1],[64,1],[64,2],
+      [64,1],[64,1],[64,2],
+      [64,1],[67,1],[60,1.5],[62,0.5],[64,4],
+      [65,1],[65,1],[65,1.5],[65,0.5],
+      [65,1],[64,1],[64,1],[64,1],
+      [64,1],[62,1],[62,1],[64,1],
+      [62,2],[67,2],
+      [64,1],[64,1],[64,2],
+      [64,1],[64,1],[64,2],
+      [64,1],[67,1],[60,1.5],[62,0.5],[64,4],
+      [65,1],[65,1],[65,1.5],[65,0.5],
+      [65,1],[64,1],[64,1],[64,0.5],[64,0.5],
+      [62,1],[62,1],[64,1],[62,1],
+      [67,4]
+    ],
+
+    init() {
+      if (this.ctx) return;
+      const AC = window.AudioContext || window.webkitAudioContext;
+      this.ctx = new AC();
+      this.master = this.ctx.createGain();
+      this.master.gain.value = 0;
+      const comp = this.ctx.createDynamicsCompressor();
+      comp.threshold.value = -18;
+      comp.ratio.value = 3;
+      this.master.connect(comp);
+      comp.connect(this.ctx.destination);
+
+      // 은은한 잔향: 피드백 딜레이
+      this.wet = this.ctx.createGain();
+      this.wet.gain.value = 0.55;
+      const delay = this.ctx.createDelay(1.0);
+      delay.delayTime.value = 0.26;
+      const fb = this.ctx.createGain();
+      fb.gain.value = 0.32;
+      const damp = this.ctx.createBiquadFilter();
+      damp.type = 'lowpass';
+      damp.frequency.value = 2600;
+      this.wet.connect(delay);
+      delay.connect(damp);
+      damp.connect(fb);
+      fb.connect(delay);
+      delay.connect(this.master);
+    },
+
+    bell(midi, when, dur, vel) {
+      const ctx = this.ctx;
+      const f = 440 * Math.pow(2, (midi - 69) / 12);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, when);
+      g.gain.exponentialRampToValueAtTime(Math.max(vel, 0.0002), when + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+
+      const partials = [[1, 1.0], [2.001, 0.34], [3.01, 0.13], [4.62, 0.05]];
+      for (const [mult, amp] of partials) {
+        const o = ctx.createOscillator();
+        o.type = 'sine';
+        o.frequency.value = f * mult;
+        const pg = ctx.createGain();
+        pg.gain.value = amp;
+        o.connect(pg);
+        pg.connect(g);
+        o.start(when);
+        o.stop(when + dur + 0.06);
+      }
+      g.connect(this.master);
+      g.connect(this.wet);
+    },
+
+    schedule() {
+      const ctx = this.ctx;
+      if (!ctx) return;
+      const beat = 60 / this.bpm;
+      while (this.nextTime < ctx.currentTime + 0.7) {
+        const [midi, beats] = this.melody[this.index % this.melody.length];
+        const isDownbeat = (this.index % 4 === 0);
+        this.bell(midi + 12, this.nextTime, Math.max(1.1, beats * beat * 1.9), 0.20);
+        // 따뜻한 저음 화음
+        if (isDownbeat) {
+          this.bell(midi - 12, this.nextTime, 2.4, 0.075);
+        }
+        this.nextTime += beats * beat;
+        this.index++;
+        if (this.index % this.melody.length === 0) {
+          this.bell(48, this.nextTime, 3.2, 0.07);
+          this.nextTime += beat * 2;
+        }
+      }
+    },
+
+    async start() {
+      this.init();
+      if (this.ctx.state === 'suspended') await this.ctx.resume().catch(() => {});
+      this.on = true;
+      this.index = 0;
+      this.nextTime = this.ctx.currentTime + 0.15;
+      this.master.gain.cancelScheduledValues(this.ctx.currentTime);
+      this.master.gain.setValueAtTime(this.master.gain.value || 0.0001, this.ctx.currentTime);
+      this.master.gain.linearRampToValueAtTime(0.30, this.ctx.currentTime + 1.4);
+      clearInterval(this.timer);
+      this.schedule();
+      this.timer = setInterval(() => this.schedule(), 200);
+    },
+
+    stop() {
+      this.on = false;
+      clearInterval(this.timer);
+      this.timer = null;
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      this.master.gain.cancelScheduledValues(now);
+      this.master.gain.setValueAtTime(this.master.gain.value, now);
+      this.master.gain.linearRampToValueAtTime(0.0001, now + 0.9);
+    },
+
+    chime() {
+      if (!this.on || !this.ctx) return;
+      const t = this.ctx.currentTime;
+      [72, 76, 79, 84].forEach((m, i) => this.bell(m, t + i * 0.11, 2.0, 0.12));
+    }
+  };
+
+  /* =========================================================
+     버튼 / 키보드
+     ========================================================= */
+  btnCam.addEventListener('click', () => {
+    if (camOn) stopCamera(false);
+    else startCamera();
+  });
+
+  btnMode.addEventListener('click', () => {
+    setMode(mode === 'tree' ? 'snow' : 'tree', 'user');
+    uniforms.uWave.value.set(0, 0, 0, time);
+  });
+
+  btnMusic.addEventListener('click', async () => {
+    if (music.on) {
+      music.stop();
+      btnMusic.textContent = '🔔 오르골 소리';
+      btnMusic.classList.remove('active');
+    } else {
+      await music.start();
+      btnMusic.textContent = '🔕 오르골 끄기';
+      btnMusic.classList.add('active');
+    }
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+    if (e.code === 'Space') { e.preventDefault(); btnMode.click(); }
+    else if (e.key === 'c' || e.key === 'C') btnCam.click();
+    else if (e.key === 'm' || e.key === 'M') btnMusic.click();
+    else if (e.key === 'ArrowLeft') setMode('snow', 'user');
+    else if (e.key === 'ArrowRight') setMode('tree', 'user');
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    running = !document.hidden;
+    if (running) {
+      lastFrame = performance.now();
+      requestAnimationFrame(frame);
+    }
+  });
+
+  /* =========================================================
+     애니메이션 루프
+     ========================================================= */
+  let lastFrame = performance.now();
+  let fpsAcc = 0, fpsN = 0, fpsAvg = 60, fpsTime = 0, warmup = 1.6;
+
+  function frame(now) {
+    if (!running) return;
+    const dtRaw = (now - lastFrame) / 1000;
+    lastFrame = now;
+    const dt = clamp(dtRaw, 0.0005, 0.05);
+    time += dt;
+
+    // 모드 보간
+    const targetMorph = mode === 'tree' ? 1 : 0;
+    morph = lerp(morph, targetMorph, 1 - Math.exp(-dt * 3.2));
+    if (Math.abs(morph - targetMorph) < 0.0008) morph = targetMorph;
+    morphProgress = morph;
+    uniforms.uMorph.value = morph;
+    uniforms.uChaosAmt.value = 4 * morph * (1 - morph) * 0.9;
+    uniforms.uShapeMix.value = (1 - morph) * 0.9 + 0.05;
+    uniforms.uTreeSpin.value = time * 0.16;
+    uniforms.uTime.value = time;
+
+    // 포인터 평활화
+    if (pointerHasPos) {
+      const k = 1 - Math.exp(-dt * 16);
+      smoothNDC.lerp(targetNDC, k);
+      screenToWorld(smoothNDC.x, smoothNDC.y, pointerWorld);
+      uniforms.uPointer.value.copy(pointerWorld);
+    }
+
+    // 손이 없으면 잠시 뒤 스월 힘을 서서히 빼서 눈을 원래대로
+    if (!handActive && !pointerDown()) {
+      if (performance.now() - lastPointerMove > 1400) strengthTarget = 0;
+    }
+    strength = lerp(strength, strengthTarget, 1 - Math.exp(-dt * 6.5));
+    uniforms.uPointerStrength.value = strength;
+
+    // 궤적
+    trailMat.uniforms.uOpacity.value = strength;
+    if (strength > 0.02 && pointerHasPos) {
+      trailPos.copyWithin(3, 0, (TRAIL_N - 1) * 3);
+      trailPos[0] = pointerWorld.x;
+      trailPos[1] = pointerWorld.y;
+      trailPos[2] = pointerWorld.z;
+      trailGeo.attributes.position.needsUpdate = true;
+    }
+
+    // 손 인식
+    if (camOn && handLandmarker && video.readyState >= 2 && now - lastDetect > 33) {
+      const vt = video.currentTime;
+      if (vt !== lastVideoTime) {
+        lastVideoTime = vt;
+        lastDetect = now;
+        try {
+          const res = handLandmarker.detectForVideo(video, now);
+          handleHand(res);
+        } catch (err) {
+          if (window.__snowErrors.length < 40) window.__snowErrors.push('detect: ' + err.message);
+        }
+      }
+    }
+
+    renderer.render(scene, camera);
+
+    // 성능 감시 → 픽셀 비율만 낮춰 60fps 유지
+    fpsAcc += 1 / Math.max(dtRaw, 0.001); fpsN++;
+    if (now - fpsTime > 1200) {
+      fpsAvg = fpsAcc / Math.max(fpsN, 1);
+      fpsAcc = 0; fpsN = 0; fpsTime = now;
+      if (warmup > 0) {
+        warmup -= 1.2;
+      } else if (fpsAvg < 40 && qualityStep === 0) {
+        qualityStep = 1; dprCap = 1.6; layout();
+      } else if (fpsAvg < 32 && qualityStep === 1) {
+        qualityStep = 2; dprCap = 1.1; layout();
+      }
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  let pDown = false;
+  function pointerDown() { return pDown; }
+  canvas.addEventListener('pointerdown', () => { pDown = true; });
+  window.addEventListener('pointerup', () => { pDown = false; });
+  window.addEventListener('pointercancel', () => { pDown = false; });
+
+  /* =========================================================
+     시작
+     ========================================================= */
+  badgeCount.textContent = '✨ ' + COUNT.toLocaleString('en-US') + ' 입자';
+
+  // 첫 프레임을 그린 뒤 로딩 화면을 걷는다
+  renderer.render(scene, camera);
+  requestAnimationFrame((t) => {
+    lastFrame = t;
+    frame(t);
+    loadingEl.classList.add('hide');
+    setTimeout(() => { loadingEl.style.display = 'none'; }, 800);
+    setTimeout(() => hintEl.classList.add('show'), 900);
+    setTimeout(() => hintEl.classList.remove('show'), 9000);
+  });
+
+  // 디버그/검증용 읽기 전용 요약
+  window.__snow = {
+    get count() { return COUNT; },
+    get mode() { return mode; },
+    get morph() { return +morph.toFixed(3); },
+    get strength() { return +strength.toFixed(3); },
+    get fps() { return Math.round(fpsAvg); },
+    get webgl2() { return isWebGL2; },
+    get camera() { return camOn; },
+    get hand() { return handActive; },
+    get errors() { return window.__snowErrors.slice(); },
+    get pixelRatio() { return renderer.getPixelRatio(); },
+    get drawCalls() { return renderer.info.render.calls; },
+    get drawParticles() { return geometry.attributes.aSize.count; },
+    setMode: (m) => setMode(m, 'user')
+  };
+  </script>
+</body>
+</html>
