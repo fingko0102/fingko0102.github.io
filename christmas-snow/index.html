@@ -328,7 +328,9 @@
       vec3 d = pos - uPointer;
       float dist = length(d);
       float infl = 1.0 - smoothstep(0.0, uPointerRadius, dist);
-      float str = infl * uPointerStrength;
+      // 트리일 때는 손길이 훨씬 약하게(형체를 부수지 않도록)
+      float forceScale = mix(1.0, 0.34, uMorph);
+      float str = infl * uPointerStrength * forceScale;
       float glow = 0.0;
       if (str > 0.0015) {
         vec3 n = d / max(dist, 0.0001);
@@ -342,7 +344,7 @@
         float coreP = 1.0 - smoothstep(0.0, uPointerRadius * 0.20, dist);
         pos += n * coreP * str * 1.4;                       // 한가운데는 비움
         pos.z += sin(dist * 2.2 - uTime * 2.6) * infl * str * 0.55;
-        glow = infl * uPointerStrength * 4.5 + coreP * str * 6.0;
+        glow = infl * uPointerStrength * mix(4.5, 1.5, uMorph) + coreP * str * 6.0;
       }
 
       /* ---- 5. 터치 파문 ---- */
@@ -359,7 +361,8 @@
       vec4 mv = modelViewMatrix * vec4(pos, 1.0);
       gl_Position = projectionMatrix * mv;
 
-      float size = aSize * (1.0 + 0.22 * uMorph) * (1.0 + infl * uPointerStrength * 3.0);
+      float size = aSize * (1.0 + 0.22 * uMorph)
+                 * (1.0 + infl * uPointerStrength * mix(3.0, 1.2, uMorph));
       gl_PointSize = clamp(size * uDPR * (26.0 / max(-mv.z, 0.1)), 0.9, 34.0);
 
       vColor = mix(aSnowColor, aTreeColor, uMorph) * (1.0 + uMorph * 0.12)
