@@ -1797,8 +1797,8 @@
     }
     // 엄지: 손가락 밑동(새끼)에서 멀고, 손바닥 중심에서도 충분히 멀면 펴진 것
     const thumbOut =
-      dist2(lm[4], lm[17]) > dist2(lm[2], lm[17]) * 1.14 &&
-      dist2(lm[4], lm[9]) > palm * 0.92;
+      dist2(lm[4], lm[17]) > dist2(lm[2], lm[17]) * 1.12 &&
+      dist2(lm[4], lm[9]) > palm * 0.78;
     if (thumbOut) ext++;
     return ext;
   }
