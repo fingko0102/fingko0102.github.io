@@ -1950,14 +1950,32 @@
     }
   }
 
+  /* 한 단계가 응답 없이 멈춰도 영원히 기다리지 않도록 시간 제한을 건다.
+     제한을 넘으면 TimeoutError로 던져 기존 오류 흐름(재시도·안내)을 타게 한다. */
+  function withTimeout(promise, ms, label) {
+    let timer = null;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        const e = new Error((label || '작업') + ' 응답 없음 (' + ms + 'ms)');
+        e.name = 'TimeoutError';
+        reject(e);
+      }, ms);
+    });
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+  }
+
+  const MP_IMPORT_MS  = 15000;   // MediaPipe 라이브러리 내려받기
+  const MP_FILESET_MS = 15000;   // WASM 파일셋 준비
+  const MP_CREATE_MS  = 25000;   // 모델(7.8MB) 생성 — GPU/CPU 각각 같은 제한
+
   async function ensureLandmarker() {
     if (handLandmarker) return;
     if (!FilesetResolverNS) {
-      const mod = await import(MP_BUNDLE);
+      const mod = await withTimeout(import(MP_BUNDLE), MP_IMPORT_MS, '손 인식 라이브러리');
       FilesetResolverNS = mod.FilesetResolver;
       HandLandmarkerNS = mod.HandLandmarker;
     }
-    const fileset = await FilesetResolverNS.forVisionTasks(MP_WASM);
+    const fileset = await withTimeout(FilesetResolverNS.forVisionTasks(MP_WASM), MP_FILESET_MS, '손 인식 도구 준비');
     const opts = {
       baseOptions: { modelAssetPath: MP_MODEL, delegate: 'GPU' },
       runningMode: 'VIDEO',
@@ -1966,18 +1984,29 @@
       minHandPresenceConfidence: 0.5,
       minTrackingConfidence: 0.5
     };
+    let made = null;
     try {
-      handLandmarker = await HandLandmarkerNS.createFromOptions(fileset, opts);
+      made = await withTimeout(HandLandmarkerNS.createFromOptions(fileset, opts), MP_CREATE_MS, '손 인식 모델(GPU)');
     } catch (e) {
+      // GPU를 아예 못 쓰는 기기는 바로 오는 오류(즉시 실패)라 CPU로 다시 시도한다.
+      // 응답이 없어 시간을 넘긴 경우엔 또 25초를 쓰지 않고 바깥의 새 시도로 넘긴다.
+      if (e && e.name === 'TimeoutError') throw e;
       opts.baseOptions = { modelAssetPath: MP_MODEL, delegate: 'CPU' };
-      handLandmarker = await HandLandmarkerNS.createFromOptions(fileset, opts);
+      made = await withTimeout(HandLandmarkerNS.createFromOptions(fileset, opts), MP_CREATE_MS, '손 인식 모델(CPU)');
     }
+    if (handLandmarker) {   // 먼저 끝난 시도가 이미 만들어 두었으면 이번 것은 정리
+      try { made.close && made.close(); } catch (e) {}
+      return;
+    }
+    handLandmarker = made;
   }
 
   /* 카메라 열기: 다른 탭·앱이 카메라를 쥐고 있으면 getUserMedia가 끝나지 않고
      멈춰 있을 수 있다. 8초 제한을 두고, 실패하면 가장 단순한 옵션으로 한 번 더
      시도한 뒤 그래도 안 되면 확실히 에러 처리로 넘긴다. */
   const CAM_TIMEOUT_MS = 8000;
+  const MODEL_RETRY_MS = 800;          // 손 인식 모델 첫 실패 뒤 다시 시도까지
+  const START_WATCHDOG_MS = 25000;     // 이 시간을 넘기면 요청을 포기하고 버튼을 되살린다
   let camSession = 0;   // stopCamera 등으로 값이 바뀌면 진행 중이던 요청 결과는 버린다
   let camUsed = false;  // 이 페이지에서 카메라를 한 번이라도 켰는지 (배지 문구 복원용)
 
@@ -2027,13 +2056,25 @@
     btnCam.textContent = '📷 카메라 준비 중…';
     setGestureBadge('⏳ 카메라 준비 중', false, false);
 
+    /* 안전장치: 어느 단계에서든 25초를 넘기면 이 요청은 포기하고
+       페이지를 나갔다 오지 않아도 버튼을 다시 누를 수 있게 되돌린다. */
+    const watchdog = setTimeout(() => {
+      if (!camStarting || mySession !== camSession) return;
+      stopCamera(true);
+      setGestureBadge('📷 카메라 꺼짐', false, false);
+      btnCam.disabled = false;
+      btnCam.textContent = '📷 카메라 손 인식';
+      toast('카메라 준비가 오래 걸려서 멈췄어요. 다시 눌러 주세요.', 4600);
+    }, START_WATCHDOG_MS);
+
+    let myStream = null;
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('getUserMedia 없음');
       }
 
       try {
-        stream = await requestCamera({
+        myStream = await requestCamera({
           video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30, max: 30 } },
           audio: false
         }, CAM_TIMEOUT_MS);
@@ -2044,16 +2085,22 @@
         // 다른 탭이 카메라를 놓을 시간을 잠깐 준 뒤 가장 단순한 옵션으로 한 번 더
         await new Promise((res) => setTimeout(res, 400));
         if (mySession !== camSession) throw Object.assign(new Error('카메라 준비 취소됨'), { name: 'CameraCancelled' });
-        stream = await requestCamera({ video: { facingMode: 'user' }, audio: false }, CAM_TIMEOUT_MS);
+        myStream = await requestCamera({ video: { facingMode: 'user' }, audio: false }, CAM_TIMEOUT_MS);
       }
 
-      video.srcObject = stream;
+      // 취소된 뒤 도착한 스트림(워치독·탭 전환)은 다른 시도의 상태를 건드리지 않고 반환만 한다
+      if (mySession !== camSession) throw Object.assign(new Error('카메라 준비 취소됨'), { name: 'CameraCancelled' });
+
+      stream = myStream;
+      video.srcObject = myStream;
       await video.play().catch(() => {});
       await new Promise((res) => {
         if (video.readyState >= 1) return res();
         video.onloadedmetadata = () => res();
         setTimeout(res, 2500);
       });
+
+      if (mySession !== camSession) throw Object.assign(new Error('카메라 준비 취소됨'), { name: 'CameraCancelled' });
 
       const miniW = 132;
       const ratio = (video.videoHeight || 480) / (video.videoWidth || 640);
@@ -2062,33 +2109,65 @@
       handCanvas.width = Math.round(miniW * 2);
       handCanvas.height = Math.round(miniW * ratio * 2);
 
-      setGestureBadge('⏳ 손 인식 모델 불러오는 중', false, false);
-      await ensureLandmarker();
-
-      if (mySession !== camSession) {   // 그 사이 탭 전환 등으로 취소됨
-        releaseStream(stream);
-        stream = null;
-        video.srcObject = null;
-        return;
-      }
-
+      // 스트림이 열렸으니 모델을 기다리는 동안에도 미리보기부터 바로 보여 준다.
+      // (버튼 문구로 지금 어느 단계인지 알 수 있게 하고, 누르면 바로 끌 수 있다)
       camOn = true;
       camUsed = true;
       $('camwrap').classList.add('show');
-      btnCam.textContent = '📷 카메라 끄기';
+      btnCam.textContent = '📷 손 인식 준비 중…';
       btnCam.classList.add('active');
+      btnCam.disabled = false;   // 기다리기 싫으면 바로 끌 수 있게
+      setGestureBadge('⏳ 손 인식 모델 불러오는 중', false, false);
+
+      // 모델 준비는 한 번 실패하면 0.8초 뒤 새로 한 번 더 시도한다
+      let modelErr = null;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          await ensureLandmarker();
+          modelErr = null;
+          break;
+        } catch (e) {
+          modelErr = e;
+          window.__snowErrors.push('landmarker' + attempt + ': ' + (e && e.name) + ' ' + (e && e.message));
+          if (mySession !== camSession) throw Object.assign(new Error('카메라 준비 취소됨'), { name: 'CameraCancelled' });
+          if (attempt === 1) {
+            handLandmarker = null;
+            setGestureBadge('⏳ 손 인식 다시 준비 중', false, false);
+            await new Promise((res) => setTimeout(res, MODEL_RETRY_MS));
+            if (mySession !== camSession) throw Object.assign(new Error('카메라 준비 취소됨'), { name: 'CameraCancelled' });
+          }
+        }
+      }
+      if (modelErr) {
+        const e = new Error('손 인식 모델 준비 실패: ' + (modelErr.name || '') + ' ' + (modelErr.message || ''));
+        e.name = 'ModelError';
+        throw e;
+      }
+
+      if (mySession !== camSession) return;   // 그 사이 탭 전환 등으로 취소됨 (stopCamera가 이미 정리함)
+
+      btnCam.textContent = '📷 카메라 끄기';
       setGestureBadge('🖐 손을 기다리는 중', false, false);
       toast('손을 카메라에 보여 주세요. 손가락 개수로 모양이 바뀌어요!', 3600);
     } catch (err) {
       window.__snowErrors.push('camera: ' + (err && err.name) + ' ' + (err && err.message));
-      const cancelled = (err && err.name === 'CameraCancelled') || mySession !== camSession;
-      stopCamera(true);   // 스트림·버튼 상태를 확실히 되돌린다
+      const stale = mySession !== camSession;
+      const cancelled = stale || (err && err.name === 'CameraCancelled');
+      // 이미 취소된 시도라면 그사이 시작된 새 시도의 상태를 정리하지 않는다
+      if (stale) {
+        releaseStream(myStream);
+        if (myStream && video.srcObject === myStream) video.srcObject = null;
+      } else {
+        stopCamera(true);   // 스트림·버튼 상태를 확실히 되돌린다
+      }
       if (cancelled) return;   // 탭이 숨겨지거나 닫혀서 취소된 경우는 조용히 끝낸다
       setGestureBadge('📷 카메라 꺼짐', false, false);
       const denied = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
       const noAnswer = err && (err.name === 'TimeoutError' || err.name === 'NotReadableError'
         || err.name === 'AbortError' || err.name === 'TrackStartError');
-      if (denied) {
+      if (err && err.name === 'ModelError') {
+        toast('손 인식 준비가 오래 걸려서 멈췄어요. 다시 눌러 주세요.', 5200);
+      } else if (denied) {
         toast('카메라 권한이 거부되었어요. 아래 칩으로 모든 모양을 그대로 볼 수 있어요.', 4200);
       } else if (noAnswer) {
         toast('다른 탭에서 카메라를 쓰고 있거나 카메라가 응답하지 않아요. 다른 탭을 닫고 다시 눌러 주세요.', 5200);
@@ -2096,10 +2175,12 @@
         toast('카메라를 열 수 없어요. 아래 칩으로 모든 모양을 그대로 볼 수 있어요.', 4200);
       }
     } finally {
+      clearTimeout(watchdog);
       if (mySession === camSession) {
         camStarting = false;
         btnCam.disabled = false;
         if (!camOn) btnCam.textContent = '📷 카메라 손 인식';
+        else btnCam.textContent = '📷 카메라 끄기';
       }
     }
   }
