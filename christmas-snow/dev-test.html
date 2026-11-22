@@ -492,9 +492,9 @@
     const BASE_Y = -4.55, TREE_H = 8.0, TREE_R = 3.30;
     const parts = [];
     const ornament = [
-      [1.00, 0.80, 0.32], [1.00, 0.80, 0.32], [1.00, 0.80, 0.32],
-      [1.00, 0.34, 0.34], [1.00, 0.34, 0.34],
-      [0.45, 0.80, 1.00], [1.00, 0.98, 0.90], [1.00, 0.56, 0.86]
+      [0.92, 0.62, 0.14], [0.92, 0.62, 0.14], [0.92, 0.62, 0.14],
+      [0.92, 0.12, 0.14], [0.92, 0.12, 0.14],
+      [0.22, 0.52, 1.00], [0.95, 0.35, 0.78], [0.25, 0.92, 0.45]
     ];
 
     parts.push({ w: 0.90, fn: (rng, o) => {
@@ -515,7 +515,7 @@
       }
     }});
 
-    parts.push({ w: 0.042, fn: (rng, o) => {
+    parts.push({ w: 0.036, fn: (rng, o) => {
       const hf = Math.pow(rng(), 0.92);
       const th = hf * 12.0;
       const rad = TREE_R * Math.pow(1 - hf, 0.92) * 1.03;
@@ -613,7 +613,7 @@
     parts.push({ w: 0.0038, fn: S(sph(0, -0.88, 1.08, 0.10, 0.10, 0.085, COAL, { shade: 0.0 })) });
 
     // 당근 코 (비스듬히 앞으로)
-    parts.push({ w: 0.016, fn: S(limb([0, 1.80, 0.72], [0.88, 1.52, 1.10], 0.20, 0.015, [1.0, 0.56, 0.14], { shade: 0.12 })) });
+    parts.push({ w: 0.018, fn: S(limb([0, 1.80, 0.72], [0.98, 1.47, 1.14], 0.24, 0.02, [1.0, 0.56, 0.14], { shade: 0.12 })) });
 
     // 목도리
     parts.push({ w: 0.020, fn: S(torus(0, 0.86, 0, 0, 1, 0, 1.02, 0.21, [0.94, 0.16, 0.24], { shade: 0.3 })) });
@@ -664,7 +664,7 @@
       o.x = 2.95 + s * Math.cos(th) * 0.15;
       o.y = 1.90 + u * 0.15;
       o.z = s * Math.sin(th) * 0.15;
-      tint(o, 1.0, 0.26, 0.18, 1);
+      tint(o, 0.95, 0.14, 0.10, 1);
     }) });
     parts.push({ w: 0.006, fn: S(sph(2.66, 1.98, 0.14, 0.045, 0.045, 0.045, [0.12, 0.10, 0.10], { shade: 0.0 })) });
 
@@ -700,7 +700,7 @@
     }
 
     // 꼬리
-    parts.push({ w: 0.010, fn: S(sph(-1.92, 0.72, 0, 0.16, 0.22, 0.15, [0.94, 0.88, 0.76], { shade: 0.2 })) });
+    parts.push({ w: 0.006, fn: S(sph(-1.92, 0.74, 0, 0.11, 0.16, 0.10, [0.82, 0.72, 0.56], { shade: 0.2 })) });
 
     // 목걸이 + 방울
     parts.push({ w: 0.008, fn: S(torus(1.60, 0.90, 0, 0.36, 0.92, 0, 0.46, 0.10, [0.90, 0.12, 0.20], { shade: 0.2 })) });
@@ -1336,20 +1336,23 @@
       float infl = 0.0;
 
       if (uFollow > 0.5) {
-        // 손가락 2개: 최근 손 궤적을 따라 입자가 소용돌이친다
+        // 손가락 2개: 최근 손 궤적을 따라 눈 입자가 나선으로 소용돌이친다
         vec3 c = aPhase < 0.25 ? uT0 : (aPhase < 0.5 ? uT1 : (aPhase < 0.75 ? uT2 : uT3));
         vec3 dv = pos - c;
         float rad = length(dv.xy);
-        float R = uPointerRadius * 1.15;
-        float inf = 1.0 - smoothstep(R * 0.12, R, rad);
-        float ringR = (0.10 + 0.90 * fract(aPhase * 13.13)) * uPointerRadius * 0.62;
-        float ang = uTime * (2.2 + 3.0 * fract(aPhase * 7.31)) + aPhase * 62.8;
+        float R = uPointerRadius * 1.55;
+        float inf = 1.0 - smoothstep(R * 0.10, R, rad);
+        float rr0 = fract(aPhase * 13.13);
+        float arm = floor(aPhase * 3.0) * 2.0944;
+        float ang = uTime * (1.7 + 1.5 * fract(aPhase * 7.31)) + arm + rr0 * 3.6;
+        float ringR = (0.10 + 0.90 * rr0) * uPointerRadius * 0.78;
         vec3 tgt = vec3(c.xy + vec2(cos(ang), sin(ang)) * ringR,
-                        c.z + sin(ang * 1.7 + aPhase * 13.0) * 0.9);
-        float w = inf * inf * uPointerStrength;
-        pos = mix(pos, tgt, clamp(w * 1.5, 0.0, 0.96));
-        glow += w * 2.0;
-        infl = inf;
+                        c.z + sin(ang * 1.7 + aPhase * 13.0) * 1.1);
+        float gate = step(aPhase, 0.60);
+        float w = inf * inf * uPointerStrength * gate;
+        pos = mix(pos, tgt, clamp(w * 1.3, 0.0, 0.92));
+        glow += w * 1.2;
+        infl = inf * gate;
       } else {
         vec3 d = pos - uPointer;
         float dist = length(d);
@@ -1535,7 +1538,7 @@
   const MODES = {
     snow:    { badge: '❄️ 눈보라',            sizeMul: 1.00, alphaMul: 1.00, ext: [4.4, 8.0] },
     tree:    { badge: '🎄 트리·장식·별',       sizeMul: 1.02, alphaMul: 0.96, ext: [3.6, 5.8] },
-    snowman: { badge: '⛄ 눈사람',             sizeMul: 0.98, alphaMul: 0.66, ext: [2.6, 4.9] },
+    snowman: { badge: '⛄ 눈사람',             sizeMul: 0.98, alphaMul: 0.66, ext: [2.9, 5.5] },
     follow:  { badge: '✨ 눈 입자 손 따라가기', sizeMul: 1.05, alphaMul: 1.00, ext: [4.4, 8.0] },
     deer:    { badge: '🦌 사슴',               sizeMul: 0.96, alphaMul: 0.85, ext: [3.4, 3.5] },
     gift:    { badge: '🎁 리본 선물 상자',      sizeMul: 0.96, alphaMul: 0.85, ext: [3.2, 3.4] },
