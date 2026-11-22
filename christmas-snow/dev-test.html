@@ -2359,6 +2359,26 @@
     get errors() { return window.__snowErrors.slice(); },
     get pixelRatio() { return renderer.getPixelRatio(); },
     setMode: (m) => setMode(m, 'chip'),
+    project: (id, scale = 80) => {
+      const sh = shapes[id];
+      if (!sh) return 'no shape';
+      let cv = document.getElementById('__proj');
+      if (!cv) {
+        cv = document.createElement('canvas');
+        cv.id = '__proj'; cv.width = 800; cv.height = 800;
+        cv.style.cssText = 'position:fixed;left:0;top:0;width:800px;height:800px;z-index:99;background:#000';
+        document.body.appendChild(cv);
+      }
+      const g = cv.getContext('2d');
+      g.fillStyle = '#000'; g.fillRect(0, 0, 800, 800);
+      for (let i = 0; i < COUNT; i++) {
+        const x = 400 + sh.pos[i * 3] * scale;
+        const y = 400 - sh.pos[i * 3 + 1] * scale;
+        g.fillStyle = 'rgb(' + (sh.col[i * 3] * 255 | 0) + ',' + (sh.col[i * 3 + 1] * 255 | 0) + ',' + (sh.col[i * 3 + 2] * 255 | 0) + ')';
+        g.fillRect(x, y, 1.4, 1.4);
+      }
+      return 'ok';
+    },
     poke: (nx = 0, ny = 0) => {
       targetNDC.set(nx, ny);
       smoothNDC.set(nx, ny);
