@@ -1302,6 +1302,15 @@
     get drawCalls() { return renderer.info.render.calls; },
     get drawParticles() { return geometry.attributes.aSize.count; },
     setMode: (m) => setMode(m, 'user'),
+    // 검사용: 포인터를 특정 위치에 고정 (nx, ny 는 -1~1)
+    poke: (nx = 0, ny = 0) => {
+      targetNDC.set(nx, ny);
+      smoothNDC.set(nx, ny);
+      pointerHasPos = true;
+      strengthTarget = 1;
+      lastPointerMove = performance.now() + 120000;
+      return true;
+    },
     // 한 프레임당 렌더 시간(ms) 측정용
     bench: (n = 30) => {
       const gl = renderer.getContext();
