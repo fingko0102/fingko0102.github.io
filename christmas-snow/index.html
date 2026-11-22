@@ -358,7 +358,7 @@
         float coreP = 1.0 - smoothstep(0.0, uPointerRadius * 0.20, dist);
         pos += n * coreP * str * 1.4;                       // 한가운데는 비움
         pos.z += sin(dist * 2.2 - uTime * 2.6) * infl * str * 0.55;
-        glow = infl * uPointerStrength * mix(4.5, 1.5, uMorph) + coreP * str * 6.0;
+        glow = infl * uPointerStrength * mix(4.5, 0.45, uMorph) + coreP * str * mix(6.0, 1.0, uMorph);
       }
 
       /* ---- 5. 터치 파문 ---- */
@@ -376,7 +376,7 @@
       gl_Position = projectionMatrix * mv;
 
       float size = aSize * (1.0 + 0.22 * uMorph)
-                 * (1.0 + infl * uPointerStrength * mix(3.0, 1.2, uMorph));
+                 * (1.0 + infl * uPointerStrength * mix(3.0, 0.45, uMorph));
       float pxSize = clamp(size * uDPR * (31.0 / max(-mv.z, 0.1)), 0.9, 44.0);
       gl_PointSize = pxSize;
       // 크게 보이는 점은 흐리고 옅게 → 가까이 있는 눈송이의 보케 느낌
