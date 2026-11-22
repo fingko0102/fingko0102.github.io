@@ -2366,6 +2366,7 @@
     get errors() { return window.__snowErrors.slice(); },
     get pixelRatio() { return renderer.getPixelRatio(); },
     setMode: (m) => setMode(m, 'chip'),
+    fingerCount: (lm) => fingerCount(lm),
     project: (id, scale = 80) => {
       const sh = shapes[id];
       if (!sh) return 'no shape';
