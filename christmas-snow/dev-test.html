@@ -608,13 +608,13 @@
     parts.push({ w: 0.0038, fn: S(sph(0, -0.88, 1.08, 0.10, 0.10, 0.085, COAL, { shade: 0.0 })) });
 
     // 당근 코 (비스듬히 앞으로)
-    parts.push({ w: 0.016, fn: S(limb([0, 1.80, 0.74], [0.40, 1.63, 1.44], 0.20, 0.015, [1.0, 0.56, 0.14], { shade: 0.12 })) });
+    parts.push({ w: 0.016, fn: S(limb([0, 1.80, 0.72], [0.88, 1.52, 1.10], 0.20, 0.015, [1.0, 0.56, 0.14], { shade: 0.12 })) });
 
     // 목도리
     parts.push({ w: 0.020, fn: S(torus(0, 0.86, 0, 0, 1, 0, 1.02, 0.21, [0.94, 0.16, 0.24], { shade: 0.3 })) });
-    parts.push({ w: 0.014, fn: S(limb([0.62, 0.90, 0.72], [0.30, -0.55, 0.98], 0.19, 0.15, [0.94, 0.16, 0.24], { shade: 0.3 })) });
+    parts.push({ w: 0.014, fn: S(limb([0.72, 0.90, 0.66], [0.56, -0.55, 0.96], 0.19, 0.15, [0.94, 0.16, 0.24], { shade: 0.3 })) });
     for (let k = 0; k < 5; k++) {
-      parts.push({ w: 0.0016, fn: S(limb([0.30 + k * 0.055 - 0.11, -0.55, 0.98], [0.26 + k * 0.06 - 0.12, -0.80, 1.00], 0.035, 0.02, [0.98, 0.55, 0.30])) });
+      parts.push({ w: 0.0016, fn: S(limb([0.56 + k * 0.055 - 0.11, -0.55, 0.96], [0.52 + k * 0.06 - 0.12, -0.80, 0.98], 0.035, 0.02, [0.98, 0.55, 0.30])) });
     }
 
     // 팔(나뭇가지)
@@ -626,9 +626,9 @@
 
     // 모자
     const HAT = [0.24, 0.26, 0.44];
-    parts.push({ w: 0.018, fn: S(cyl(0, 2.56, 0, 0.98, 0.13, [0.16, 0.18, 0.34], { cap: 0.55 })) });
-    parts.push({ w: 0.038, fn: S(cyl(0, 3.06, 0, 0.63, 0.92, HAT, { cap: 0.35 })) });
-    parts.push({ w: 0.010, fn: S(cyl(0, 2.77, 0, 0.645, 0.17, [0.92, 0.18, 0.26], { cap: 0.0 })) });
+    parts.push({ w: 0.018, fn: S(cyl(0, 2.58, 0, 1.02, 0.13, [0.16, 0.18, 0.34], { cap: 0.55 })) });
+    parts.push({ w: 0.038, fn: S(cyl(0, 3.14, 0, 0.58, 1.02, HAT, { cap: 0.35 })) });
+    parts.push({ w: 0.010, fn: S(cyl(0, 2.80, 0, 0.595, 0.17, [0.92, 0.18, 0.26], { cap: 0.0 })) });
 
     return buildShape(202, parts);
   }
@@ -800,17 +800,17 @@
 
   // 5) 눈결정 (6각 대칭)
   function buildFlake() {
-    const ICE = [0.86, 0.95, 1.0];
-    const ICE_TIP = [1.0, 1.0, 1.0];
+    const ICE = [0.80, 0.91, 1.0];
+    const ICE_TIP = [0.98, 0.99, 1.0];
     const parts = [];
 
-    parts.push({ w: 0.030, fn: sph(0, 0, 0, 0.26, 0.26, 0.16, ICE, { shade: 0.2 }) });
-    parts.push({ w: 0.014, fn: disc(0, 0, 0, 0.30, 0.52, ICE, { thick: 0.14 }) });
+    parts.push({ w: 0.026, fn: sph(0, 0, 0, 0.26, 0.26, 0.15, ICE, { shade: 0.2 }) });
+    parts.push({ w: 0.012, fn: disc(0, 0, 0, 0.30, 0.54, ICE, { thick: 0.14 }) });
 
     // 팔 하나: 각도 A, r0→r1, 폭 w0→w1
     function arm(angle, r0, r1, w0, w1, part, opt = {}) {
       const a = angle, ca = Math.cos(a), sa = Math.sin(a);
-      const thick = opt.thick === undefined ? 0.10 : opt.thick;
+      const thick = opt.thick === undefined ? 0.09 : opt.thick;
       return (rng, o) => {
         const t = Math.pow(rng(), 0.85);
         const rr = r0 + (r1 - r0) * t;
@@ -818,36 +818,47 @@
         const off = (rng() * 2 - 1) * ww;
         o.x = ca * rr - sa * off;
         o.y = sa * rr + ca * off;
-        o.z = (rng() - 0.5) * thick * (1 - 0.4 * t);
-        tint(o, part[0], part[1], part[2], 0.80 + rng() * 0.34);
+        o.z = (rng() - 0.5) * thick * (1 - 0.35 * t);
+        tint(o, part[0], part[1], part[2], 0.82 + rng() * 0.32);
       };
     }
 
+    const P = (ang, r) => [Math.cos(ang) * r, Math.sin(ang) * r, 0];
+
     for (let k = 0; k < 6; k++) {
       const base = k * Math.PI / 3;
-      parts.push({ w: 0.070, fn: arm(base, 0.30, 3.42, 0.115, 0.028, ICE) });
-      // 곁가지 (팔에서 35° 정도 벌어져 깃털처럼)
-      const br = [[0.95, 1.05, 0.085], [1.60, 0.90, 0.070], [2.20, 0.68, 0.055], [2.72, 0.44, 0.042]];
+      parts.push({ w: 0.062, fn: arm(base, 0.34, 3.42, 0.105, 0.024, ICE) });
+
+      // 깃털 같은 곁가지 (짧게, 바깥으로 몇 단)
+      const br = [[0.95, 0.62, 0.060], [1.55, 0.52, 0.050], [2.12, 0.42, 0.040], [2.62, 0.30, 0.030]];
       for (const [r, len, wid] of br) {
         for (const sgn of [1, -1]) {
-          const ba = base + sgn * 0.62;
-          parts.push({ w: 0.013, fn: arm(ba, r, r + len, wid, wid * 0.30, ICE) });
-          // 가지 끝 잔가지
-          const mid = r + len * 0.62;
-          parts.push({ w: 0.005, fn: arm(ba + sgn * 0.42, mid, mid + len * 0.42, wid * 0.55, wid * 0.12, ICE) });
+          parts.push({ w: 0.0105, fn: arm(base + sgn * 0.72, r, r + len, wid, wid * 0.25, ICE) });
         }
       }
+
+      // 중심 육각 고리 — 이웃 팔을 잇는 짧은 변
+      const a1 = base, a2 = base + Math.PI / 3;
+      parts.push({ w: 0.020, fn: (rng, o) => {
+        const t = rng();
+        const p0 = P(a1, 0.78), p1 = P(a2, 0.78);
+        o.x = p0[0] + (p1[0] - p0[0]) * t + (rng() - 0.5) * 0.05;
+        o.y = p0[1] + (p1[1] - p0[1]) * t + (rng() - 0.5) * 0.05;
+        o.z = (rng() - 0.5) * 0.08;
+        tint(o, ICE[0], ICE[1], ICE[2], 0.82 + rng() * 0.26);
+      }});
+
       // 끝 다이아몬드
-      parts.push({ w: 0.014, fn: (rng, o) => {
+      parts.push({ w: 0.012, fn: (rng, o) => {
         const t = Math.pow(rng(), 0.7);
-        const rr = 3.30 + t * 0.30;
+        const rr = 3.28 + t * 0.34;
         const ca = Math.cos(base), sa = Math.sin(base);
-        const ww = 0.16 * (1 - t) + 0.02;
+        const ww = 0.15 * (1 - t) + 0.02;
         const off = (rng() * 2 - 1) * ww;
         o.x = ca * rr - sa * off;
         o.y = sa * rr + ca * off;
-        o.z = (rng() - 0.5) * 0.06;
-        tint(o, ICE_TIP[0], ICE_TIP[1], ICE_TIP[2], 0.95 + rng() * 0.25);
+        o.z = (rng() - 0.5) * 0.05;
+        tint(o, ICE_TIP[0], ICE_TIP[1], ICE_TIP[2], 0.95 + rng() * 0.22);
       }});
     }
 
@@ -861,6 +872,7 @@
     cv.width = W; cv.height = H;
     const c = cv.getContext('2d');
     paintSantaArt(c, W, H);
+    window.__snowArtCanvas = cv;
 
     const data = c.getImageData(0, 0, W, H).data;
     const list = [];
@@ -1484,7 +1496,7 @@
   const MODES = {
     snow:    { badge: '❄️ 눈보라',            sizeMul: 1.00, alphaMul: 1.00, ext: [4.4, 8.0] },
     tree:    { badge: '🎄 트리·장식·별',       sizeMul: 1.02, alphaMul: 0.96, ext: [3.6, 5.8] },
-    snowman: { badge: '⛄ 눈사람',             sizeMul: 0.98, alphaMul: 0.62, ext: [2.9, 5.4] },
+    snowman: { badge: '⛄ 눈사람',             sizeMul: 0.98, alphaMul: 0.66, ext: [2.6, 4.9] },
     follow:  { badge: '✨ 눈 입자 손 따라가기', sizeMul: 1.05, alphaMul: 1.00, ext: [4.4, 8.0] },
     deer:    { badge: '🦌 사슴',               sizeMul: 0.96, alphaMul: 0.85, ext: [3.4, 3.5] },
     gift:    { badge: '🎁 리본 선물 상자',      sizeMul: 0.96, alphaMul: 0.85, ext: [3.0, 3.2] },
