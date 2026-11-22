@@ -458,9 +458,9 @@
       const i3 = i * 3;
       const r = rnd();
       let kind;
-      if (r < 0.878) kind = 'leaf';
-      else if (r < 0.930) kind = 'orn';
-      else if (r < 0.968) kind = 'star';
+      if (r < 0.900) kind = 'leaf';
+      else if (r < 0.926) kind = 'orn';
+      else if (r < 0.958) kind = 'star';
       else kind = 'trunk';
 
       let tx = 0, ty = 0, tz = 0, size = 1.4;
@@ -500,7 +500,7 @@
         ty = BASE_Y + hf * TREE_H;
         const c = ORNAMENT[(rnd() * ORNAMENT.length) | 0];
         tcol.setRGB(c[0], c[1], c[2]);
-        size = 1.5 + rnd() * 1.7;
+        size = 1.15 + rnd() * 1.35;
 
       } else if (kind === 'star') {
         // 꼭대기 오각별 — 별 테두리를 따라 채움
@@ -509,7 +509,7 @@
         const f = k - seg;
         const a0 = seg / 10 * Math.PI * 2 - Math.PI / 2;
         const a1 = (seg + 1) / 10 * Math.PI * 2 - Math.PI / 2;
-        const RO = 1.05, RI = 0.42;
+        const RO = 1.30, RI = 0.50;
         const r0 = (seg % 2 === 0) ? RO : RI;
         const r1 = ((seg + 1) % 2 === 0) ? RO : RI;
         let sx = Math.cos(a0) * r0 + (Math.cos(a1) * r1 - Math.cos(a0) * r0) * f;
@@ -522,7 +522,7 @@
         const warm = rnd();
         if (warm > 0.30) tcol.setHSL(0.105 + rnd() * 0.025, 0.80, 0.52 + rnd() * 0.18);
         else tcol.setHSL(0.12, 0.25, 0.82 + rnd() * 0.10);
-        size = 1.5 + rnd() * 1.9;
+        size = 1.25 + rnd() * 1.45;
 
       } else {
         // 줄기
