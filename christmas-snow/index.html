@@ -375,12 +375,15 @@
 
       float size = aSize * (1.0 + 0.22 * uMorph)
                  * (1.0 + infl * uPointerStrength * mix(3.0, 1.2, uMorph));
-      gl_PointSize = clamp(size * uDPR * (26.0 / max(-mv.z, 0.1)), 0.9, 34.0);
+      float pxSize = clamp(size * uDPR * (31.0 / max(-mv.z, 0.1)), 0.9, 44.0);
+      gl_PointSize = pxSize;
+      // 크게 보이는 점은 흐리고 옅게 → 가까이 있는 눈송이의 보케 느낌
+      float sizeAlpha = clamp(9.0 / max(pxSize, 1.0), 0.30, 1.15);
 
       vColor = mix(aSnowColor, aTreeColor, uMorph) * (1.0 + uMorph * 0.12)
              * (1.15 - 0.55 * smoothstep(9.0, 26.0, -mv.z));   // 깊이에 따른 밝기
       float tw = 0.55 + 0.45 * sin(uTime * (1.1 + aSpeed * 2.4) + aPhase * 6.2831);
-      vAlpha = mix(0.34 + 0.32 * tw, 0.44 + 0.24 * tw, uMorph);
+      vAlpha = mix(0.34 + 0.32 * tw, 0.44 + 0.24 * tw, uMorph) * sizeAlpha;
       vGlow = glow;
     }
   `;
@@ -571,7 +574,7 @@
       aChaos[i3 + 1] = Math.cos(phi) * mag;
       aChaos[i3 + 2] = Math.sin(phi) * Math.sin(theta) * mag;
 
-      aSize[i]  = size;
+      aSize[i]  = size * ((rnd() < 0.18) ? (1.4 + rnd() * 1.0) : 1.0);
       aPhase[i] = rnd();
       aSpeed[i] = 0.45 + rnd() * 1.25;
     }
