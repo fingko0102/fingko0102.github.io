@@ -1,7 +1,8 @@
 /* 연결 계층: PeerJS(WebRTC) + BroadcastChannel + localStorage
    - 미디어월(wall)이 Host, 휴대폰(draw)과 추가 미디어월(wall-peer)이 Guest
    - Host 자리를 이미 누가 잡고 있으면(unavailable-id) 서브 미디어월로 붙는다
-   - 서버 없이 GitHub Pages에서 동작하도록 PeerJS 공개 시그널링 서버 사용 */
+   - 서버 없이 GitHub Pages에서 동작하도록 PeerJS 공개 시그널링 서버 사용
+   - 그림 삭제(delete)도 같은 통로로 알려 다른 열린 월에서 즉시 사라지게 한다 */
 (function () {
   const XG = (window.XG = window.XG || {});
 
@@ -34,6 +35,7 @@
     const room = String(cfg.room || 'XMAS');
     const role = cfg.role === 'guest' || cfg.role === 'draw' ? 'guest' : 'wall';
     const onArt = cfg.onArt || function () {};
+    const onDelete = cfg.onDelete || function () {};
     const onStatus = cfg.onStatus || function () {};
     const onCount = cfg.onCount || function () {};
     const getArts = typeof cfg.getArts === 'function' ? cfg.getArts : function () { return []; };
@@ -42,9 +44,11 @@
     const CHANNEL = 'fgxmas:' + room;
     const ARTS_KEY = 'fgxmas:' + room + ':arts';
     const LAST_KEY = 'fgxmas:' + room + ':lastart';
+    const DEL_KEY = 'fgxmas:' + room + ':deleted';
     const hasPeerJS = typeof window.Peer === 'function';
 
     const seen = Object.create(null);
+    const seenDeleted = Object.create(null);
     const conns = [];          // Host: [{ c, kind }]
     let peer = null;
     let hostConn = null;       // Guest/서브 월: Host와의 연결
@@ -103,8 +107,20 @@
       if (!art) return null;
       if (seen[art.id]) return null;
       seen[art.id] = 1;
+      // 이미 지운 그림은 어떤 경로로 와도 되살리지 않는다
+      if (seenDeleted[art.id]) return null;
+      if (XG.artStore && XG.artStore.isDeleted && XG.artStore.isDeleted(art.id)) return null;
       onArt(art);
       return art;
+    }
+
+    function deliverDelete(id) {
+      const key = String(id || '');
+      if (!key) return false;
+      if (seenDeleted[key]) return false;
+      seenDeleted[key] = 1;
+      onDelete(key);
+      return true;
     }
 
     function setCount(n) {
@@ -120,6 +136,15 @@
     /* ---------- 메시지 ---------- */
     function relay(art, except) {
       const msg = wire(art);
+      postBC(msg);
+      for (let i = 0; i < conns.length; i++) {
+        if (conns[i] === except) continue;
+        try { conns[i].c.send(msg); } catch (e) {}
+      }
+    }
+
+    function relayDelete(id, except) {
+      const msg = { t: 'delete', id: String(id) };
       postBC(msg);
       for (let i = 0; i < conns.length; i++) {
         if (conns[i] === except) continue;
@@ -162,6 +187,12 @@
     function handle(data, src, entry) {
       if (!data || typeof data !== 'object') return;
       const t = data.t;
+      if (t === 'delete') {
+        if (deliverDelete(data.id)) {
+          if (isHost && src !== 'bc') relayDelete(data.id, entry || null);
+        }
+        return;
+      }
       if (t === 'art') {
         const art = deliver(data);
         if (art && isHost && src !== 'bc') relay(art, entry || null);
@@ -201,7 +232,19 @@
     }
 
     const onStorage = function (e) {
-      if (!e || (e.key !== ARTS_KEY && e.key !== LAST_KEY) || !e.newValue) return;
+      if (!e || !e.key) return;
+      if (e.key === DEL_KEY && e.newValue) {
+        let v = null;
+        try { v = JSON.parse(e.newValue); } catch (err) { return; }
+        if (Array.isArray(v)) {
+          for (let i = 0; i < v.length; i++) {
+            const id = typeof v[i] === 'string' ? v[i] : (v[i] && v[i].id);
+            if (id) deliverDelete(id);
+          }
+        }
+        return;
+      }
+      if ((e.key !== ARTS_KEY && e.key !== LAST_KEY) || !e.newValue) return;
       let v = null;
       try { v = JSON.parse(e.newValue); } catch (err) { return; }
       if (Array.isArray(v)) {
@@ -460,7 +503,24 @@
           const r = XG.artStore.remember(room, art);
           out.stored = !!(r && r.ok);
         }
+        // 서버 DB가 응답하는 상태면 함께 저장한다 (실패해도 조용히 넘어간다)
+        if (XG.api && XG.api.enabled()) {
+          try { XG.api.putArt(room, art); } catch (e) {}
+        }
         return out;
+      },
+      sendDelete: function (id) {
+        const key = String(id || '');
+        if (!key) return false;
+        seenDeleted[key] = 1;
+        if (isHost) relayDelete(key, null);
+        else {
+          postBC({ t: 'delete', id: key });
+          if (hostConn && hostConn.open) {
+            try { hostConn.send({ t: 'delete', id: key }); } catch (e) {}
+          }
+        }
+        return true;
       },
       publishCount: function (n) {
         setCount(n);

@@ -45,6 +45,26 @@
 
     paint();
 
+    /* 이 기기에 남아 있던 그림도 서버 DB로 올려 둔다 (서버가 응답할 때만, 조용히) */
+    if (XG.api && XG.api.enabled() && XG.artStore) {
+      const local = XG.artStore.loadAll();
+      if (local.length) {
+        XG.api.listArts(room).then(function (list) {
+          if (!list) return;
+          const have = Object.create(null);
+          for (let i = 0; i < list.length; i++) {
+            const a = list[i];
+            if (a && a.id) have[a.id] = 1;
+          }
+          local.slice(-30).forEach(function (a) {
+            if (!a || !a.id || have[a.id]) return;
+            if (XG.artStore.isDeleted(a.id)) return;
+            XG.api.putArt(room, a);
+          });
+        }).catch(function () {});
+      }
+    }
+
     XG.createDrawer($('drawer-host'), {
       sentExtra: '<button type="button" class="btn-line" data-go="wall">미디어월 보기</button>',
       onSend: function (payload) {
