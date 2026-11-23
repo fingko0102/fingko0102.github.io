@@ -104,11 +104,13 @@
     // 캔버스를 항상 정사각형으로 유지
     function layout() {
       const r = box.getBoundingClientRect();
-      const side = Math.max(120, Math.floor(Math.min(r.width, r.height)));
+      const w = Math.max(120, Math.floor(Math.min(r.width, r.height)));
+      // 세로 여유가 있으면 조금 더 길게 써서 빈 공간을 줄인다
+      const h = Math.max(w, Math.min(Math.floor(r.height), Math.round(w * 1.25)));
       const cur = frame.getBoundingClientRect();
-      if (Math.abs(cur.width - side) > 1 || Math.abs(cur.height - side) > 1) {
-        frame.style.width = side + 'px';
-        frame.style.height = side + 'px';
+      if (Math.abs(cur.width - w) > 1 || Math.abs(cur.height - h) > 1) {
+        frame.style.width = w + 'px';
+        frame.style.height = h + 'px';
       }
       fit();
     }
