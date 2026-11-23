@@ -1,6 +1,10 @@
-/* 미디어월: 떠다니는 방명록 + QR + 실시간 참여 */
+/* 미디어월: 떠다니는 방명록 + QR + 실시간 참여
+   - 저장된 모든 방(fgxmas:*)의 그림을 통합해 한 화면에 띄운다
+   - 첫 번째 월이 Host, 추가로 연 월은 서브로 붙어 서로 그림을 맞춘다 */
 (function () {
   const XG = (window.XG = window.XG || {});
+
+  const DISPLAY_MAX = 44;   // 화면에 동시에 떠 있는 그림 수 (저장은 그대로 유지)
 
   XG.startWall = function (room) {
     const $ = function (id) { return document.getElementById(id); };
@@ -11,8 +15,11 @@
     const statusEl = $('host-status');
 
     const items = [];
+    const known = Object.create(null);   // id -> art (저장 대상 전체)
     let samplesLeft = 0;
     let bus = null;
+    let persistTimer = 0;
+    let lastPublished = -1;
 
     roomEl.textContent = room;
 
@@ -103,11 +110,38 @@
       return { nx: best.x / window.innerWidth, ny: best.y / window.innerHeight };
     }
 
+    /* ---------- 저장(통합) ---------- */
+    function allArts() {
+      return Object.keys(known)
+        .map(function (k) { return known[k]; })
+        .sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); })
+        .slice(-XG.artStore.MAX);
+    }
+
+    function schedulePersist() {
+      if (persistTimer) return;
+      persistTimer = setTimeout(function () {
+        persistTimer = 0;
+        if (!XG.artStore) return;
+        XG.artStore.mergeWrite(room, allArts());
+      }, 400);
+    }
+
+    function remember(art) {
+      if (!art || !art.id || art.ex) return;
+      const prev = known[art.id];
+      if (prev && (prev.ts || 0) > (art.ts || 0)) return;
+      known[art.id] = art;
+      schedulePersist();
+    }
+
     /* ---------- 오너먼트 ---------- */
     function addArt(art, opt) {
       opt = opt || {};
       if (!art || !art.url) return;
       if (items.some(function (i) { return i.id === art.id; })) return;
+
+      remember(art);
 
       const size = pickSize(window.innerWidth, window.innerHeight);
       const spot = place(size);
@@ -147,7 +181,7 @@
 
       el.addEventListener('click', function () { showArt(art); });
 
-      if (items.length > 44) removeItem(items[0].id);
+      if (items.length > DISPLAY_MAX) removeItem(items[0].id);
 
       if (!art.ex && !opt.silent) {
         if (samplesLeft > 0) {
@@ -158,7 +192,6 @@
       }
 
       updateCount();
-      if (!art.ex && !opt.silent) persist();
       return item;
     }
 
@@ -190,7 +223,10 @@
 
     function updateCount() {
       countEl.textContent = String(items.length);
-      if (bus && bus.publishCount) bus.publishCount(items.length);
+      if (bus && bus.publishCount && items.length !== lastPublished) {
+        lastPublished = items.length;
+        bus.publishCount(items.length);
+      }
     }
 
     /* ---------- 눌러서 크게 보기 ---------- */
@@ -208,44 +244,24 @@
       if (btn) btn.addEventListener('click', function () { XG.modal.close(); });
     }
 
-    /* ---------- 저장/복원 ---------- */
-    function storeKey() { return 'fgxmas:' + room + ':arts'; }
-
-    function persist() {
-      try {
-        const real = items.filter(function (i) { return !i.art.ex; }).slice(-20)
-          .map(function (i) { return i.art; });
-        localStorage.setItem(storeKey(), JSON.stringify(real));
-      } catch (e) {}
-    }
-
-    function restore() {
-      let list = [];
-      try { list = JSON.parse(localStorage.getItem(storeKey()) || '[]'); } catch (e) { list = []; }
-      if (!Array.isArray(list)) list = [];
-      list.slice(-20).forEach(function (a) {
-        if (a && typeof a.url === 'string' && a.url.indexOf('data:image/') === 0) {
-          addArt(a, { sparkle: false, silent: true });
-        }
+    /* ---------- 복원: 저장된 모든 방의 그림을 한 번에 ---------- */
+    function restoreAll() {
+      const store = XG.artStore;
+      const list = store ? store.loadAll() : [];
+      list.forEach(function (a) { remember(a); });
+      if (store) {
+        // 기존 방 키는 그대로 두고, 통합 방 코드에 합쳐 저장한다
+        if (persistTimer) { clearTimeout(persistTimer); persistTimer = 0; }
+        store.mergeWrite(room, allArts());
+      }
+      list.slice(-DISPLAY_MAX).forEach(function (a) {
+        addArt(a, { sparkle: false, silent: true });
       });
-    }
-
-    /* 최근에 휴대폰에서 보냈지만 월이 닫혀 있던 그림도 이어받기 */
-    function restorePending() {
-      try {
-        const raw = localStorage.getItem('fgxmas:' + room + ':lastart');
-        if (!raw) return;
-        const a = JSON.parse(raw);
-        if (!a || a.t !== 'art' || typeof a.url !== 'string') return;
-        if (a.url.indexOf('data:image/') !== 0) return;
-        if (Date.now() - (Number(a.ts) || 0) > 30 * 60 * 1000) return;
-        addArt({ id: a.id, url: a.url, name: a.name, msg: a.msg, ts: a.ts }, { sparkle: false });
-      } catch (e) {}
+      updateCount();
     }
 
     /* ---------- 시작 ---------- */
-    restore();
-    restorePending();
+    restoreAll();
 
     if (!items.length) {
       XG.samples().forEach(function (s, i) {
@@ -262,23 +278,33 @@
     bus = XG.createBus({
       room: room,
       role: 'wall',
+      getArts: allArts,
       onArt: function (art) { addArt(art); },
       onStatus: function (s, info) {
-        if (s === 'ready') {
+        if (s === 'host') {
           statusEl.className = 'host-status ok';
-          statusEl.innerHTML = '<i></i>실시간 참여 열림' + (info && info.guests ? ' · ' + info.guests + '명 접속' : '');
-        } else if (s === 'id-taken') {
+          statusEl.innerHTML = '<i></i>통합 미디어월 연결됨' +
+            (info && info.guests ? ' · ' + info.guests + '명 참여 중' : ' · 참여 열림') +
+            (info && info.walls ? ' · 월 ' + (info.walls + 1) + '개' : '');
+        } else if (s === 'linked') {
+          statusEl.className = 'host-status ok';
+          statusEl.innerHTML = '<i></i>통합 미디어월 연결됨 · 다른 월과 그림 맞추는 중' +
+            (info && info.guests ? ' · ' + info.guests + '명 참여 중' : '');
+        } else if (s === 'off') {
           statusEl.className = 'host-status warn';
-          statusEl.innerHTML = '<i></i>같은 방 코드의 월이 이미 열려 있어요';
+          statusEl.innerHTML = '<i></i>이 기기의 그림만 표시돼요';
         } else {
           statusEl.className = 'host-status warn';
-          statusEl.innerHTML = '<i></i>실시간 연결 준비 중… (같은 기기에서는 바로 참여돼요)';
+          statusEl.innerHTML = '<i></i>통합 미디어월 연결 중… (같은 기기에서는 바로 보여요)';
         }
       },
       onCount: function () {}
     });
 
-    if (bus && bus.publishCount) bus.publishCount(items.length);
+    if (bus && bus.publishCount) {
+      lastPublished = items.length;
+      bus.publishCount(items.length);
+    }
 
     /* ---------- 이 화면에서 바로 그리기 ---------- */
     $('wall-draw-btn').addEventListener('click', function () {
@@ -296,7 +322,10 @@
       XG.createDrawer(card.querySelector('#wall-drawer'), {
         sentExtra: '<button type="button" class="btn-gold" data-go="wall">월 보기</button>',
         onSend: function (payload) {
-          addArt(payload);
+          let r = { remote: false, sameBrowser: false };
+          try { r = bus.sendArt(payload); } catch (e) {}
+          if (r.remote) return '실시간으로 미디어월에 보냈어요.';
+          if (r.sameBrowser) return '미디어월에 보냈어요.';
           return '이 화면에 바로 떠올랐어요.';
         },
         onSentShown: function (el) {

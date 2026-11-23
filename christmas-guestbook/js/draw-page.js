@@ -36,6 +36,8 @@
     const bus = XG.createBus({
       room: room,
       role: 'guest',
+      // 이 기기에 남아 있는 그림도 미디어월과 맞춘다
+      getArts: function () { return XG.artStore ? XG.artStore.loadAll() : []; },
       onArt: function () {},
       onCount: function (n) { lastCount = n; paint(); },
       onStatus: function (s) { state = s; paint(); }
