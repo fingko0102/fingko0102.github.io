@@ -45,7 +45,8 @@
 
     paint();
 
-    /* 이 기기에 남아 있던 그림도 서버 DB로 올려 둔다 (서버가 응답할 때만, 조용히) */
+    /* 이 기기에 남아 있던 그림도 서버 DB로 올려 둔다 (서버가 응답할 때만, 조용히)
+       - 여러 장을 한 장씩 동시에 보내면 서버가 서로를 덮어쓰므로, 한 번의 요청으로 모아 올린다. */
     if (XG.api && XG.api.enabled() && XG.artStore) {
       const local = XG.artStore.loadAll();
       if (local.length) {
@@ -56,11 +57,13 @@
             const a = list[i];
             if (a && a.id) have[a.id] = 1;
           }
+          const missing = [];
           local.slice(-30).forEach(function (a) {
             if (!a || !a.id || have[a.id]) return;
             if (XG.artStore.isDeleted(a.id)) return;
-            XG.api.putArt(room, a);
+            missing.push(a);
           });
+          if (missing.length) XG.api.putArts(room, missing);
         }).catch(function () {});
       }
     }

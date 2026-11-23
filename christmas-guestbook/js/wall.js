@@ -156,48 +156,126 @@
     });
 
     /* ---------- 배치 ---------- */
+    // 화면에서 건드리면 안 되는 자리(타이틀·달·QR 카드·상태/버튼)를 실제 크기로 잰다
+    const KEEP_SEL = ['.wall-head', '.moon', '.join-card', '.wall-foot'];
+    const KEEP_PAD = 12;      // 그림과 UI 사이 최소 여백(px)
+    const TAG_H = 26;         // 그림 아래 이름표 높이
+
+    function keepOuts() {
+      const out = [];
+      for (let i = 0; i < KEEP_SEL.length; i++) {
+        const el = document.querySelector(KEEP_SEL[i]);
+        if (!el) continue;
+        const cs = window.getComputedStyle(el);
+        if (cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) === 0) continue;
+        const b = el.getBoundingClientRect();
+        if (b.width < 2 || b.height < 2) continue;
+        out.push({
+          x0: b.left - KEEP_PAD, y0: b.top - KEEP_PAD,
+          x1: b.right + KEEP_PAD, y1: b.bottom + KEEP_PAD
+        });
+      }
+      return out;
+    }
+
+    // 오너먼트가 들어갈 수 있는 안전한 띠 (상단 타이틀~하단 카드 사이)
     function area() {
       const W = window.innerWidth, H = window.innerHeight;
-      if (W < 760) {
-        return { x: W * 0.06, y: H * 0.19, w: W * 0.88, h: H * 0.38 };
+      const narrow = W < 760;
+      let top = H * (narrow ? 0.17 : 0.16);
+      let bottom = H * (narrow ? 0.82 : 0.66);
+      const head = document.querySelector('.wall-head');
+      if (head) top = Math.max(top, head.getBoundingClientRect().bottom + 6);
+      const join = document.querySelector('.join-card');
+      if (join) {
+        const t = join.getBoundingClientRect().top - TAG_H - 6;
+        if (t > top + H * 0.2) bottom = Math.min(bottom, t);
       }
-      return { x: W * 0.08, y: H * 0.16, w: W * 0.84, h: H * 0.44 };
+      if (bottom - top < H * 0.24) bottom = Math.min(H * 0.92, top + H * 0.24);
+      return { x: W * (narrow ? 0.07 : 0.08), y: top, w: W * (narrow ? 0.86 : 0.84), h: bottom - top };
     }
 
     function pickSize(W, H) {
       const base = Math.min(W, H);
-      return Math.round(Math.max(82, Math.min(168, base * (0.135 + Math.random() * 0.055))));
+      const short = H < 560;   // 가로로 납작한 화면: 조금 작게
+      const min = short ? 58 : 82;
+      const max = short ? 108 : 168;
+      return Math.round(Math.max(min, Math.min(max, base * (0.135 + Math.random() * 0.055))));
     }
 
-    // 트리(무대)는 오너먼트가 비켜 가도록
+    // 트리(무대)는 오너먼트가 비켜 가도록 — 실제로 그려진 트리 크기를 잰다
     function treeZone() {
+      const el = document.querySelector('.tree-wrap');
+      if (el) {
+        const b = el.getBoundingClientRect();
+        if (b.width > 20) {
+          return {
+            x0: b.left + b.width * 0.14, x1: b.right - b.width * 0.14,
+            y0: b.top + b.height * 0.04, y1: b.bottom
+          };
+        }
+      }
       const W = window.innerWidth, H = window.innerHeight;
       const tw = Math.min(Math.min(0.45 * H, 410), 0.7 * W);
       const th = tw * 1.3;
       return { x0: W / 2 - tw * 0.62, x1: W / 2 + tw * 0.62, y0: H + 18 - th * 1.02, y1: H };
     }
 
-    function place(size) {
+    // 그림 한 장이 차지하는 사각형(이름표 포함)과 UI 영역이 겹치는가
+    function hitsUi(cx, cy, size, keep) {
+      const x0 = cx - size / 2, x1 = cx + size / 2;
+      const y0 = cy - size / 2, y1 = cy + size / 2 + TAG_H;
+      for (let i = 0; i < keep.length; i++) {
+        const k = keep[i];
+        if (x1 > k.x0 && k.x1 > x0 && y1 > k.y0 && k.y1 > y0) return true;
+      }
+      return false;
+    }
+
+    function place(size, selfId) {
+      const W = window.innerWidth, H = window.innerHeight;
       const a = area();
       const zone = treeZone();
-      let best = null, bestScore = -1e9;
-      for (let i = 0; i < 60; i++) {
+      const keep = keepOuts();
+      let best = null, bestScore = -1e9, bestFree = null;
+      for (let i = 0; i < 120; i++) {
         const cx = a.x + a.w * (0.04 + Math.random() * 0.92);
         const cy = a.y + a.h * (0.05 + Math.random() * 0.9);
         if (cx > zone.x0 && cx < zone.x1 && cy > zone.y0 - size * 0.35) continue;
         let minDist = 1e9;
         for (let k = 0; k < items.length; k++) {
           const it = items[k];
-          const px = it.nx * window.innerWidth;
-          const py = it.ny * window.innerHeight;
+          if (selfId && it.id === selfId) continue;
+          const px = it.nx * W;
+          const py = it.ny * H;
           const d = Math.hypot(px - cx, py - cy) - (it.size + size) / 2;
           if (d < minDist) minDist = d;
         }
+        if (hitsUi(cx, cy, size, keep)) continue;   // 타이틀·달·버튼·QR 뒤에는 띄우지 않는다
+        if (!bestFree) bestFree = { x: cx, y: cy };
         if (minDist > bestScore) { bestScore = minDist; best = { x: cx, y: cy }; }
         if (minDist > size * 0.55) break;
       }
-      if (!best) best = { x: a.x + a.w * 0.5, y: a.y + a.h * 0.4 };
-      return { nx: best.x / window.innerWidth, ny: best.y / window.innerHeight };
+      if (!best) best = bestFree;
+      if (!best) {
+        // 자리가 좁으면 격자로 훑어 UI와 겹치지 않는 곳을 찾는다
+        const step = Math.max(22, size * 0.55);
+        for (let cy = a.y + size / 2; cy <= a.y + a.h && !best; cy += step) {
+          for (let cx = a.x + size / 2; cx <= a.x + a.w && !best; cx += step) {
+            if (cx > zone.x0 && cx < zone.x1 && cy > zone.y0 - size * 0.35) continue;
+            if (hitsUi(cx, cy, size, keep)) continue;
+            best = { x: cx, y: cy };
+          }
+        }
+      }
+      if (!best) {
+        // 그래도 없으면 화면 밖으로 나가지 않는 선에서 가운데에 둔다
+        best = {
+          x: Math.min(W - size / 2 - 6, Math.max(size / 2 + 6, a.x + a.w * 0.5)),
+          y: Math.min(H - size / 2 - TAG_H - 6, Math.max(size / 2 + 6, a.y + a.h * 0.4))
+        };
+      }
+      return { nx: best.x / W, ny: best.y / H };
     }
 
     /* ---------- 저장(통합) ---------- */
@@ -234,8 +312,11 @@
     function renderStatus() {
       if (!statusEl) return;
       statusEl.className = statusCls;
-      statusEl.innerHTML = statusHtml +
-        (serverOn() ? '<span class="srv-badge">· 서버 DB 연결됨</span>' : '');
+      // 점(<i>)과 글자를 나눠서, 좁은 화면에서는 글자만 말줄임(...)되게 한다
+      const m = /^<i><\/i>([\s\S]*)$/.exec(statusHtml);
+      const text = m ? m[1] : statusHtml;
+      statusEl.innerHTML = '<i></i><span class="hs-text">' + text +
+        (serverOn() ? '<span class="srv-badge">· 서버 DB 연결됨</span>' : '') + '</span>';
     }
 
     if (XG.api && XG.api.onChange) XG.api.onChange(renderStatus);
@@ -565,12 +646,22 @@
         for (let i = 0; i < fresh.length; i++) addArt(fresh[i], { sparkle: true });
 
         if (uploadLocal) {
+          // 서버에 없는 내 그림은 한 번의 요청으로 모아 올린다.
+          // (한 장씩 동시에 보내면 서버가 서로를 덮어써 그림이 유실된다)
           const local = allArts();
+          const missing = [];
           for (let i = 0; i < local.length; i++) {
             const a = local[i];
             if (nowIds[a.id] || uploadTried[a.id]) continue;
             uploadTried[a.id] = 1;
-            XG.api.putArt(room, a);
+            missing.push(a);
+          }
+          if (missing.length > 0) {
+            XG.api.putArts(room, missing).then(function (ok) {
+              if (ok) return;
+              // 실패하면 다음 동기화 때 다시 시도한다
+              for (let i = 0; i < missing.length; i++) delete uploadTried[missing[i].id];
+            }).catch(function () {});
           }
         }
         renderStatus();
@@ -680,13 +771,20 @@
       if (bus) bus.destroy();
     });
 
-    /* 화면 크기가 바뀌어도 비율 유지 (left/top % 사용) */
+    /* 화면 크기가 바뀌어도(회전 포함) UI와 겹치지 않는 자리로 다시 놓는다 */
     let rt = 0;
     window.addEventListener('resize', function () {
       clearTimeout(rt);
       rt = setTimeout(function () {
         items.forEach(function (it) {
-          it.el.style.setProperty('--s', pickSize(window.innerWidth, window.innerHeight) + 'px');
+          const size = pickSize(window.innerWidth, window.innerHeight);
+          it.size = size;
+          it.el.style.setProperty('--s', size + 'px');
+          const spot = place(size, it.id);
+          it.nx = spot.nx;
+          it.ny = spot.ny;
+          it.el.style.left = (spot.nx * 100).toFixed(3) + '%';
+          it.el.style.top = (spot.ny * 100).toFixed(3) + '%';
         });
       }, 250);
     });

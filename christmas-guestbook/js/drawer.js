@@ -74,7 +74,7 @@
     let strokes = [];
     let history = [];
     let drawing = null;
-    let color = PALETTE[1].c;
+    let color = PALETTE[0].c;   // 기본 붓 색: 흰색
     let sizeIdx = 1;
     let erasing = false;
     let rafPending = 0;

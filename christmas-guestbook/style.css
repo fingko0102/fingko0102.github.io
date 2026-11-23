@@ -146,6 +146,9 @@ svg{display:block}
 }
 .wall-sub{margin:4px 0 0;font-size:clamp(11px,1.05vw,14px);letter-spacing:.28em;color:rgba(238,243,255,.55)}
 
+/* 하단 묶음: 넓은 화면에서는 각자 제자리(display:contents), 좁은 화면에서는 맨 아래 고정 바 */
+.wall-bottom{display:contents}
+
 /* 참여 카드 */
 .join-card{
   position:absolute;left:max(18px,2.4vw);bottom:max(18px,3vh);z-index:7;
@@ -369,6 +372,7 @@ svg{display:block}
 
 /* 상태 배지: 서버 DB */
 .srv-badge{font-size:10.5px;font-weight:650;color:var(--green);white-space:nowrap}
+.host-status .hs-text{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 .sheet{width:100%;border-radius:26px 26px 22px 22px;background:rgba(8,13,28,.96);
   border:1px solid rgba(255,255,255,.13);box-shadow:0 30px 90px rgba(0,0,0,.6);
@@ -382,21 +386,58 @@ svg{display:block}
 
 /* ================= 반응형 ================= */
 @media (max-width:900px){
-  .moon{width:82px;height:82px;right:7%;top:7%}
-  .join-card{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));gap:11px;padding:11px 12px}
+  /* 하단 고정 바: 상태·그림 수 / QR 카드가 서로 겹치지 않게 세로로 쌓는다 */
+  .wall-bottom{
+    position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));
+    z-index:7;display:flex;flex-direction:column;gap:8px;pointer-events:none;
+  }
+  .wall-bottom > *{position:static;pointer-events:auto}
+  .wall-foot{
+    flex-direction:row;align-items:center;justify-content:space-between;gap:10px;
+    padding:0 2px;text-align:left;order:1;
+  }
+  .join-card{order:2;left:auto;right:auto;bottom:auto;top:auto;gap:11px;padding:11px 12px}
+  .foot-stat{flex:0 0 auto;gap:4px}
+  .count{font-size:18px;line-height:1.1}
+  .count-label{display:inline;font-size:10px;white-space:nowrap}
+  .host-status{
+    min-width:0;max-width:58%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+    font-size:10px;color:rgba(238,243,255,.5);
+  }
+  .host-status .srv-badge{display:none}
+  .host-status i{flex:0 0 auto}
+  .foot-link{display:none}
+  /* 달: 타이틀 오른쪽 위 모서리와 떨어진 자리로 작게 */
+  .moon{width:54px;height:54px;right:10px;top:calc(env(safe-area-inset-top) + 6px)}
+  .wall-head{top:calc(env(safe-area-inset-top) + 12px);padding:0 68px}
+  .kicker{font-size:9.5px;letter-spacing:.2em}
+  .wall-title{font-size:clamp(24px,6.6vw,34px);margin-top:4px}
   .qr-box{width:84px;height:84px;padding:6px}
   .join-sub{font-size:10.5px}
-  .wall-foot{right:12px;bottom:auto;top:calc(env(safe-area-inset-top) + 92px);align-items:flex-end;gap:6px}
-  .count{font-size:22px}
-  .count-label{display:none}
   .sample-note{display:none}
-  .wall-title{font-size:clamp(26px,7.6vw,40px)}
-  .wall-head{top:calc(env(safe-area-inset-top) + 16px)}
   .tree-wrap{width:min(62vh,420px)}
 }
 @media (max-height:560px){
   .wall-sub{display:none}
   .orn-tag{display:none}
+  /* 가로로 짧은 화면: QR 카드를 한 줄로 납작하게 → 그림이 뜰 자리를 남긴다 */
+  .wall-bottom{gap:6px;bottom:calc(8px + env(safe-area-inset-bottom))}
+  .join-card{
+    display:flex;flex-direction:row;align-items:center;gap:10px;
+    padding:8px 10px;border-radius:16px;
+  }
+  .qr-wrap{flex:0 0 auto}
+  .qr-box{width:56px;height:56px;padding:4px;border-radius:9px}
+  .join-body{flex:1 1 auto;gap:2px;min-width:0}
+  .join-title{font-size:12px}
+  .join-sub{display:none}
+  .room-line{font-size:9.5px}
+  .chip-btn{margin-top:0;padding:3px 9px;font-size:10.5px}
+  .ghost-btn{grid-column:auto;flex:0 0 auto;margin-left:auto;padding:7px 10px;font-size:10.5px;white-space:nowrap}
+  .moon{width:44px;height:44px;right:8px;top:calc(env(safe-area-inset-top) + 4px)}
+  .wall-head{top:calc(env(safe-area-inset-top) + 6px)}
+  .wall-title{font-size:clamp(22px,4.6vw,32px)}
+  .kicker{font-size:8.5px}
 }
 @media (prefers-reduced-motion:reduce){
   .aurora i,.moon,.orn-float,.orn-halo,.lamps circle{animation:none !important}
