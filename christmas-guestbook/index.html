@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>크리스마스 디지털 방명록 · Merry Christmas</title>
+<meta name="description" content="QR로 접속해 그림과 한마디를 보내면 미디어월에 별처럼 떠오르는 크리스마스 디지털 방명록입니다." />
+<meta name="theme-color" content="#070b18" />
+<meta property="og:title" content="크리스마스 디지털 방명록" />
+<meta property="og:description" content="겨울밤 미디어월에 그림과 마음을 띄워 보세요." />
+<link rel="stylesheet" href="style.css" />
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="%230b1024"/><path d="M50 18 L70 54 H60 L78 82 H22 L40 54 H28 Z" fill="%233fd18b"/><circle cx="50" cy="18" r="5" fill="%23f3d18b"/></svg>' />
+</head>
+<body>
+
+<!-- ============ 미디어월 ============ -->
+<section class="view wall" id="view-wall">
+  <canvas class="scene" id="scene" aria-hidden="true"></canvas>
+  <div class="aurora" aria-hidden="true"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
+  <div class="moon" aria-hidden="true"></div>
+  <div class="vignette" aria-hidden="true"></div>
+
+  <div class="stage" aria-hidden="true">
+    <div class="spotlight"></div>
+    <div class="snowbank b1"></div>
+    <div class="snowbank b2"></div>
+    <div class="tree-wrap">
+      <svg class="tree" viewBox="0 0 400 520" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="tA" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#1f9c68"/><stop offset="1" stop-color="#0a5a3c"/>
+          </linearGradient>
+          <linearGradient id="tB" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#26b377"/><stop offset="1" stop-color="#0d6a46"/>
+          </linearGradient>
+          <linearGradient id="tC" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#31c98a"/><stop offset="1" stop-color="#118055"/>
+          </linearGradient>
+          <radialGradient id="starG" cx="50%" cy="45%" r="60%">
+            <stop offset="0" stop-color="#fffbe8"/><stop offset="55%" stop-color="#ffd978"/><stop offset="100%" stop-color="#f0a93c"/>
+          </radialGradient>
+          <radialGradient id="treeGlow" cx="50%" cy="52%" r="50%">
+            <stop offset="0" stop-color="rgba(90,220,170,.34)"/><stop offset="70%" stop-color="rgba(60,170,140,.06)"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+          </radialGradient>
+          <radialGradient id="snowHill" cx="50%" cy="0%" r="80%">
+            <stop offset="0" stop-color="rgba(226,240,255,.55)"/><stop offset="100%" stop-color="rgba(160,190,240,0)"/>
+          </radialGradient>
+          <filter id="softGlow" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="5" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <ellipse cx="200" cy="330" rx="230" ry="240" fill="url(#treeGlow)"/>
+        <rect x="184" y="418" width="32" height="76" rx="8" fill="#4a3322"/>
+        <rect x="184" y="418" width="10" height="76" rx="5" fill="#5d4229" opacity=".7"/>
+
+        <path d="M200 250 C232 306 302 404 360 470 C300 486 100 486 40 470 C98 404 168 306 200 250 Z" fill="url(#tA)"/>
+        <path d="M200 250 C230 300 290 392 344 460 C296 470 104 470 56 460 C110 392 170 300 200 250 Z" fill="url(#tB)" opacity=".85"/>
+        <path d="M200 148 C226 200 288 302 332 378 C288 392 112 392 68 378 C112 302 174 200 200 148 Z" fill="url(#tB)"/>
+        <path d="M200 148 C224 194 280 292 320 370 C280 380 120 380 80 370 C120 292 176 194 200 148 Z" fill="url(#tC)" opacity=".8"/>
+        <path d="M200 58 C220 102 262 184 294 246 C262 258 138 258 106 246 C138 184 180 102 200 58 Z" fill="url(#tC)"/>
+        <path d="M200 58 C218 98 254 178 286 242 C254 250 146 250 114 242 C146 178 182 98 200 58 Z" fill="#3ad597" opacity=".45"/>
+
+        <path d="M40 470 C98 458 120 486 200 486 C280 486 302 458 360 470 C300 488 100 488 40 470 Z" fill="url(#snowHill)"/>
+        <path d="M68 378 C112 366 130 390 200 390 C270 390 288 366 332 378 C288 394 112 394 68 378 Z" fill="url(#snowHill)" opacity=".75"/>
+        <path d="M106 246 C138 236 152 256 200 256 C248 256 262 236 294 246 C262 260 138 260 106 246 Z" fill="url(#snowHill)" opacity=".7"/>
+
+        <g class="lamps" fill="#ffd98a">
+          <circle cx="200" cy="112" r="3.4" style="--d:0s"/>
+          <circle cx="168" cy="170" r="3.2" style="--d:.6s"/>
+          <circle cx="236" cy="176" r="3.6" style="--d:1.2s"/>
+          <circle cx="196" cy="206" r="3" style="--d:1.8s"/>
+          <circle cx="136" cy="268" r="3.4" style="--d:.3s"/>
+          <circle cx="262" cy="272" r="3.2" style="--d:.9s"/>
+          <circle cx="200" cy="300" r="3.8" style="--d:1.5s"/>
+          <circle cx="112" cy="338" r="3.2" style="--d:2.1s"/>
+          <circle cx="288" cy="342" r="3.4" style="--d:.45s"/>
+          <circle cx="170" cy="386" r="3.6" style="--d:1.05s"/>
+          <circle cx="234" cy="392" r="3.2" style="--d:1.65s"/>
+          <circle cx="96" cy="428" r="3.4" style="--d:2.25s"/>
+          <circle cx="304" cy="432" r="3.2" style="--d:.75s"/>
+          <circle cx="200" cy="446" r="3.6" style="--d:1.35s"/>
+          <circle cx="150" cy="330" r="2.8" style="--d:1.95s"/>
+          <circle cx="252" cy="230" r="2.8" style="--d:2.55s"/>
+        </g>
+
+        <g filter="url(#softGlow)">
+          <path d="M200 10 L212 44 H248 L219 64 L230 98 L200 78 L170 98 L181 64 L152 44 H188 Z" fill="url(#starG)"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="ornaments" id="ornaments"></div>
+
+  <header class="wall-head">
+    <p class="kicker">2026 · DIGITAL GUESTBOOK</p>
+    <h1 class="wall-title">Merry Christmas</h1>
+    <p class="wall-sub">크리스마스 디지털 방명록</p>
+  </header>
+
+  <aside class="join-card" id="join-card">
+    <div class="qr-wrap"><div class="qr-box" id="qr"></div></div>
+    <div class="join-body">
+      <p class="join-title">휴대폰으로 스캔</p>
+      <p class="join-sub">그림을 그려 보내면<br>이 월에 떠올라요</p>
+      <div class="room-line">방 코드 <b id="room-code">----</b></div>
+      <button class="chip-btn" id="copy-link" type="button">링크 복사</button>
+    </div>
+    <button class="ghost-btn" id="wall-draw-btn" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.2 4.3l4.5 4.5-9.4 9.4-5.6 1.1 1.1-5.6 9.4-9.4z"/><path d="M13.4 6.1l4.5 4.5"/></svg>
+      이 화면에서 바로 그려보기
+    </button>
+  </aside>
+
+  <footer class="wall-foot">
+    <div class="foot-stat">
+      <span class="count" id="wall-count">0</span>
+      <span class="count-label">개의 그림이 떠 있어요</span>
+    </div>
+    <span class="host-status" id="host-status"><i></i>미디어월 준비 중…</span>
+    <a class="foot-link" id="wall-open-draw" href="?mode=draw">휴대폰으로 그리기</a>
+  </footer>
+
+  <div class="sample-note" id="sample-note" hidden>지금은 예시 그림이에요 · QR로 참여하면 진짜 방명록이 채워져요</div>
+</section>
+
+<!-- ============ 그리기(참여) ============ -->
+<section class="view draw" id="view-draw">
+  <div class="draw-bg" aria-hidden="true"><i class="d1"></i><i class="d2"></i></div>
+  <header class="draw-head">
+    <a class="head-link" id="draw-back" href="?mode=wall" aria-label="미디어월 보기">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+      <span>미디어월</span>
+    </a>
+    <div class="draw-head-title">
+      <span class="kicker">CHRISTMAS GUESTBOOK</span>
+      <b>방명록 그리기</b>
+    </div>
+    <span class="badge" id="conn-badge"><i></i><span>연결 중…</span></span>
+  </header>
+
+  <main class="draw-main">
+    <div class="drawer-host" id="drawer-host"></div>
+  </main>
+
+  <p class="draw-foot-note" id="draw-room-note">방 코드 <b id="draw-room">----</b></p>
+</section>
+
+<!-- ============ 공용 ============ -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="modal" id="modal" hidden>
+  <div class="modal-backdrop" data-close="1"></div>
+  <div class="modal-card" id="modal-card" role="dialog" aria-modal="true"></div>
+</div>
+
+<script defer src="vendor/qrcode-generator.js"></script>
+<script defer src="vendor/peerjs.min.js"></script>
+<script defer src="js/scene.js"></script>
+<script defer src="js/ui.js"></script>
+<script defer src="js/drawer.js"></script>
+<script defer src="js/bus.js"></script>
+<script defer src="js/samples.js"></script>
+<script defer src="js/wall.js"></script>
+<script defer src="js/draw-page.js"></script>
+<script defer src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+/* 그리기(참여) 화면 */
+(function () {
+  const XG = (window.XG = window.XG || {});
+
+  XG.startDraw = function (room) {
+    const $ = function (id) { return document.getElementById(id); };
+    const badge = $('conn-badge');
+    const badgeText = badge.querySelector('span');
+    $('draw-room').textContent = room;
+
+    const back = $('draw-back');
+    back.setAttribute('href', '?mode=wall&room=' + encodeURIComponent(room));
+
+    let state = 'connecting';
+    let lastCount = 0;
+
+    function paint() {
+      badge.classList.remove('live', 'local', 'off');
+      let text = '연결 중…';
+      if (state === 'live') {
+        badge.classList.add('live');
+        text = '미디어월 연결' + (lastCount > 0 ? ' · ' + lastCount : '');
+      } else if (state === 'local') {
+        badge.classList.add('local');
+        text = '로컬 연결' + (lastCount > 0 ? ' · ' + lastCount : '');
+      } else if (state === 'no-wall') {
+        badge.classList.add('off');
+        text = '월 대기 중';
+      } else if (state === 'off') {
+        badge.classList.add('off');
+        text = '체험 모드';
+      }
+      badgeText.textContent = text;
+    }
+
+    const bus = XG.createBus({
+      room: room,
+      role: 'guest',
+      onArt: function () {},
+      onCount: function (n) { lastCount = n; paint(); },
+      onStatus: function (s) { state = s; paint(); }
+    });
+
+    paint();
+
+    XG.createDrawer($('drawer-host'), {
+      sentExtra: '<button type="button" class="btn-line" data-go="wall">미디어월 보기</button>',
+      onSend: function (payload) {
+        let r = { remote: false, sameBrowser: false };
+        try { r = bus.sendArt(payload); } catch (e) {}
+        const st = bus.state ? bus.state() : { p2p: 'connecting' };
+        if (st.p2p === 'open') { state = 'live'; paint(); }
+        if (r.remote) return '실시간으로 미디어월에 보냈어요.';
+        if (r.sameBrowser) return '미디어월에 보냈어요.';
+        return '그림을 저장했어요. 미디어월이 열려 있으면 바로 떠올라요.';
+      },
+      onSentShown: function (el) {
+        const b = el.querySelector('[data-go="wall"]');
+        if (b) b.addEventListener('click', function () {
+          location.href = '?mode=wall&room=' + encodeURIComponent(room);
+        });
+      }
+    });
+
+    window.addEventListener('beforeunload', function () { bus.destroy(); });
+  };
+})();
