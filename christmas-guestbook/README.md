@@ -52,7 +52,6 @@ js/scene.js           밤하늘 별·눈 캔버스
 js/drawer.js          그리기 캔버스 컴포넌트 (팔레트·굵기·지우개·되돌리기·보내기)
 js/store.js           저장 계층 (모든 방의 그림 통합·병합 저장)
 js/bus.js             PeerJS + BroadcastChannel + localStorage 연결 계층
-js/samples.js         예시 그림 6개 (참여 전 미리보기)
 js/wall.js            미디어월 (QR·오너먼트 배치·저장/복원)
 js/draw-page.js       그리기 화면
 js/ui.js              토스트·모달·클립보드

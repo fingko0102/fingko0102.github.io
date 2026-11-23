@@ -10,13 +10,11 @@
     const $ = function (id) { return document.getElementById(id); };
     const wrap = $('ornaments');
     const countEl = $('wall-count');
-    const noteEl = $('sample-note');
     const roomEl = $('room-code');
     const statusEl = $('host-status');
 
     const items = [];
     const known = Object.create(null);   // id -> art (저장 대상 전체)
-    let samplesLeft = 0;
     let bus = null;
     let persistTimer = 0;
     let lastPublished = -1;
@@ -128,7 +126,7 @@
     }
 
     function remember(art) {
-      if (!art || !art.id || art.ex) return;
+      if (!art || !art.id) return;
       const prev = known[art.id];
       if (prev && (prev.ts || 0) > (art.ts || 0)) return;
       known[art.id] = art;
@@ -163,7 +161,7 @@
         '<div class="orn-float"><div class="orn-pop">' +
           '<span class="orn-halo"></span>' +
           '<img class="orn-img" alt="" src="' + art.url + '">' +
-          '<span class="orn-tag">' + tagText + (art.ex ? '<span class="ex">예시</span>' : '') + '</span>' +
+          '<span class="orn-tag">' + tagText + '</span>' +
         '</div></div>';
 
       const img = el.querySelector('.orn-img');
@@ -182,14 +180,6 @@
       el.addEventListener('click', function () { showArt(art); });
 
       if (items.length > DISPLAY_MAX) removeItem(items[0].id);
-
-      if (!art.ex && !opt.silent) {
-        if (samplesLeft > 0) {
-          const s = items.find(function (i) { return i.art.ex; });
-          if (s) { samplesLeft--; removeItem(s.id); }
-        }
-        if (samplesLeft === 0 && noteEl) noteEl.hidden = true;
-      }
 
       updateCount();
       return item;
@@ -236,7 +226,6 @@
           '<img src="' + art.url + '" alt="">' +
           '<p class="art-name">' + XG.escape(art.name || '익명') + '</p>' +
           (art.msg ? '<p class="art-msg">' + XG.escape(art.msg) + '</p>' : '') +
-          (art.ex ? '<p class="art-msg" style="font-size:11px;color:rgba(238,243,255,.45)">예시 그림입니다</p>' : '') +
           '<button type="button" class="art-close" data-close="1">닫기</button>' +
         '</div>'
       );
@@ -261,18 +250,8 @@
     }
 
     /* ---------- 시작 ---------- */
+    // 저장된 그림만 띄운다. 예시 그림은 쓰지 않는다.
     restoreAll();
-
-    if (!items.length) {
-      XG.samples().forEach(function (s, i) {
-        setTimeout(function () { addArt(s, { silent: true }); }, 120 * i);
-        samplesLeft++;
-      });
-      noteEl.hidden = false;
-    } else {
-      noteEl.hidden = true;
-      samplesLeft = 0;
-    }
 
     /* ---------- 연결 ---------- */
     bus = XG.createBus({
