@@ -14,10 +14,20 @@
     let state = 'connecting';
     let lastCount = 0;
 
+    function serverOn() {
+      return !!(XG.api && XG.api.enabled() && XG.api.available());
+    }
+
     function paint() {
       badge.classList.remove('live', 'local', 'off');
       let text = '연결 중…';
-      if (state === 'live') {
+      if (serverOn()) {
+        // 서버 DB에 바로 저장되므로 P2P 연결을 기다리지 않고 초록 불로 알린다
+        badge.classList.add('live');
+        text = '서버 DB 연결됨' +
+          (state === 'live' ? ' · 실시간 연결' : '') +
+          (lastCount > 0 ? ' · ' + lastCount : '');
+      } else if (state === 'live') {
         badge.classList.add('live');
         text = '미디어월 연결' + (lastCount > 0 ? ' · ' + lastCount : '');
       } else if (state === 'local') {
@@ -42,6 +52,12 @@
       onCount: function (n) { lastCount = n; paint(); },
       onStatus: function (s) { state = s; paint(); }
     });
+
+    // 서버 DB가 살아 있는지 먼저 확인한다 → '월 대기 중'에 머물지 않고 바로 초록 불
+    if (XG.api && XG.api.enabled()) {
+      if (XG.api.onChange) XG.api.onChange(paint);
+      if (XG.api.ping) XG.api.ping().then(paint, function () { paint(); });
+    }
 
     paint();
 
@@ -76,7 +92,8 @@
         const st = bus.state ? bus.state() : { p2p: 'connecting' };
         if (st.p2p === 'open') { state = 'live'; paint(); }
         if (r.remote) return '실시간으로 미디어월에 보냈어요.';
-        if (r.sameBrowser) return '미디어월에 보냈어요.';
+        // P2P가 아니어도 서버 DB에 바로 저장되므로 미디어월이 곧 받아 간다
+        if (serverOn() || r.sameBrowser) return '미디어월에 보냈어요! 곧 화면에 떠올라요.';
         return '그림을 저장했어요. 미디어월이 열려 있으면 바로 떠올라요.';
       },
       onSentShown: function (el) {

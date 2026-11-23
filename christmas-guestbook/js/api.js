@@ -44,6 +44,8 @@
   }
 
   function endpoint(path, room) {
+    // 방 코드가 없는 요청(/health 등)은 ?room= 을 붙이지 않는다
+    if (room === undefined || room === null || room === '') return base + path;
     return base + path + '?room=' + encodeURIComponent(room);
   }
 
@@ -127,6 +129,16 @@
         const i = listeners.indexOf(fn);
         if (i >= 0) listeners.splice(i, 1);
       };
+    },
+
+    /* 서버가 살아 있는지 빠르게 확인한다(GET /health). 배지·안내를 바로 바꾸는 데 쓴다 */
+    ping: function () {
+      if (!base || typeof fetch !== 'function') return Promise.resolve(false);
+      return call('GET', '/health', undefined, undefined, 4000).then(function (res) {
+        if (!res || !res.ok) { setState('offline'); return false; }
+        setState('online');
+        return true;
+      });
     },
 
     /* 서버에 저장된 그림 목록. 실패하면 null */

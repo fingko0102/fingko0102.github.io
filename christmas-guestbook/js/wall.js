@@ -9,7 +9,7 @@
   const DISPLAY_MAX = 44;      // 화면에 동시에 떠 있는 그림 수 (저장은 그대로 유지)
   const LONG_PRESS_MS = 600;   // 꾹 누르기 판정 시간
   const MOVE_TOLERANCE = 12;   // 이보다 많이 움직이면 꾹 누르기 취소(px)
-  const SYNC_MS = 8000;        // 서버와 맞추는 주기
+  const SYNC_MS = 4000;        // 서버와 맞추는 주기 (다른 기기 그림이 빨리 떠오르게 4초)
 
   // 지우기 비밀번호의 SHA-256 (평문은 코드에 두지 않는다)
   const DELETE_SHA256 = 'c0c4a69b17a7955ac230bfc8db4a123eaa956ccf3c0022e68b8d4e2f5b699d1f';
@@ -110,6 +110,8 @@
     let syncTimer = 0;
     let statusCls = 'host-status';
     let statusHtml = '<i></i>미디어월 준비 중…';
+    let peerState = 'connecting';   // host | linked | off | connecting (실시간 P2P 상태)
+    let peerGuests = 0;
 
     roomEl.textContent = room;
 
@@ -317,14 +319,25 @@
       return !!(XG.api && XG.api.enabled() && XG.api.available());
     }
 
+    // 서버 DB가 실제로 응답한 상태면, 실시간 P2P(PeerJS)가 늦거나 막혀도
+    // 배지를 초록 불 '서버 DB 연결됨 · 통합 방명록'으로 고정한다.
+    // (P2P까지 붙어 있으면 '· 실시간 연결'만 덧붙인다)
     function renderStatus() {
       if (!statusEl) return;
-      statusEl.className = statusCls;
       // 점(<i>)과 글자를 나눠서, 좁은 화면에서는 글자만 말줄임(...)되게 한다
+      if (serverOn()) {
+        let text = '서버 DB 연결됨 · 통합 방명록';
+        if (peerState === 'host' || peerState === 'linked') {
+          text += ' · 실시간 연결' + (peerGuests ? ' · ' + peerGuests + '명 참여 중' : '');
+        }
+        statusEl.className = 'host-status ok';
+        statusEl.innerHTML = '<i></i><span class="hs-text">' + text + '</span>';
+        return;
+      }
+      statusEl.className = statusCls;
       const m = /^<i><\/i>([\s\S]*)$/.exec(statusHtml);
       const text = m ? m[1] : statusHtml;
-      statusEl.innerHTML = '<i></i><span class="hs-text">' + text +
-        (serverOn() ? '<span class="srv-badge">· 서버 DB 연결됨</span>' : '') + '</span>';
+      statusEl.innerHTML = '<i></i><span class="hs-text">' + text + '</span>';
     }
 
     if (XG.api && XG.api.onChange) XG.api.onChange(renderStatus);
@@ -679,6 +692,8 @@
 
     function startSync() {
       if (!XG.api || !XG.api.enabled()) { renderStatus(); return; }
+      // 연결을 기다리지 않고 서버가 살아 있는지 먼저 확인한다 → 배지가 바로 초록 불
+      if (XG.api.ping) XG.api.ping().then(renderStatus, function () { renderStatus(); });
       pullServer(true);
       syncTimer = setInterval(function () {
         if (document.hidden) return;
@@ -718,6 +733,8 @@
       onArt: function (art) { addArt(art); },
       onDelete: function (id) { commitDelete(id, false); },
       onStatus: function (s, info) {
+        peerState = s;
+        peerGuests = info && info.guests ? info.guests : 0;
         if (s === 'host') {
           statusCls = 'host-status ok';
           statusHtml = '<i></i>통합 미디어월 연결됨' +

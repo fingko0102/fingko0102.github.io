@@ -25,8 +25,11 @@
 
   const clean = function (v) { return (v || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8); };
 
-  const roomFromUrl = clean(XG.roomFromUrl());
-  const room = roomFromUrl || DEFAULT_ROOM;
+  // 방 코드는 URL 값과 상관없이 항상 통합 방 'XMAS' 하나만 쓴다.
+  // (예전에 복사해 둔 ?room=MERRY·?room=ABC1 링크나 QR로 들어와도 방이 갈라지지 않고 같은 미디어월로 모인다.)
+  const requestedRoom = clean(XG.roomFromUrl());
+  const room = DEFAULT_ROOM;
+  const mergedFrom = requestedRoom && requestedRoom !== room ? requestedRoom : '';
 
   try {
     const u = new URL(location.href);
@@ -42,8 +45,9 @@
     XG.startWall(room);
   } else {
     const note = document.getElementById('draw-room-note');
-    if (note && !roomFromUrl) {
-      note.innerHTML = '통합 방명록 · 방 코드 <b id="draw-room">' + room + '</b> — 어디서 그려도 하나의 미디어월에 모여요';
+    if (note) {
+      note.innerHTML = '통합 방명록 · 방 코드 <b id="draw-room">' + room + '</b> — 어디서 그려도 하나의 미디어월에 모여요'
+        + (mergedFrom ? ' (' + XG.escape(mergedFrom) + ' → ' + room + ')' : '');
     }
     XG.startDraw(room);
   }
