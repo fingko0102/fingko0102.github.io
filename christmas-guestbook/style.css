@@ -122,6 +122,9 @@ svg{display:block}
   font-size:11.5px;line-height:1.25;color:#eaf0ff;
 }
 .orn-tag b{color:var(--gold);font-weight:700;flex:0 0 auto}
+/* 가장자리에 붙은 그림: 이름표를 안쪽으로 붙여 화면 밖으로 나가지 않게 */
+.orn.tag-left .orn-tag{left:0;transform:none}
+.orn.tag-right .orn-tag{left:auto;right:0;transform:none}
 .orn-tag span{overflow:hidden;text-overflow:ellipsis;color:rgba(238,243,255,.82)}
 .orn-tag .ex{color:rgba(238,243,255,.4);font-size:10px}
 .orn:active .orn-img{transform:scale(.96)}

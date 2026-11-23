@@ -197,9 +197,10 @@
 
     function pickSize(W, H) {
       const base = Math.min(W, H);
-      const short = H < 560;   // 가로로 납작한 화면: 조금 작게
-      const min = short ? 58 : 82;
-      const max = short ? 108 : 168;
+      const short = H < 560;      // 가로로 납작한 화면
+      const tiny = base < 380;    // 아주 작은 화면
+      const min = short ? 56 : (tiny ? 62 : 82);
+      const max = short ? 108 : (tiny ? 132 : 168);
       return Math.round(Math.max(min, Math.min(max, base * (0.135 + Math.random() * 0.055))));
     }
 
@@ -278,6 +279,13 @@
       return { nx: best.x / W, ny: best.y / H };
     }
 
+    // 가장자리에 붙은 그림은 이름표가 화면 밖으로 나가지 않게 그쪽으로 붙인다
+    function setTagSide(el, nx) {
+      if (!el || !el.classList) return;
+      el.classList.toggle('tag-left', nx < 0.24);
+      el.classList.toggle('tag-right', nx > 0.76);
+    }
+
     /* ---------- 저장(통합) ---------- */
     function allArts() {
       return Object.keys(known)
@@ -341,6 +349,7 @@
       el.style.setProperty('--delay', (-Math.random() * 8).toFixed(2) + 's');
       el.style.left = (spot.nx * 100).toFixed(3) + '%';
       el.style.top = (spot.ny * 100).toFixed(3) + '%';
+      setTagSide(el, spot.nx);
       el.setAttribute('aria-label', (art.name || '익명') + ' 님의 그림 · 길게 누르면 지우기');
 
       const tagText = art.msg
@@ -785,6 +794,7 @@
           it.ny = spot.ny;
           it.el.style.left = (spot.nx * 100).toFixed(3) + '%';
           it.el.style.top = (spot.ny * 100).toFixed(3) + '%';
+          setTagSide(it.el, spot.nx);
         });
       }, 250);
     });
