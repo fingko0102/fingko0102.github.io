@@ -4,6 +4,19 @@
   if (!XG.startWall || !XG.startDraw) return;
 
   const params = new URLSearchParams(location.search);
+
+  // ?debug=1 이면 오류를 수집해 window.__errs 에 남긴다 (검사용)
+  if (params.get('debug') === '1') {
+    window.__errs = [];
+    window.addEventListener('error', function (e) { window.__errs.push(String(e.message || e.type)); });
+    window.addEventListener('unhandledrejection', function (e) { window.__errs.push('rejection: ' + String(e.reason)); });
+    const origError = console.error;
+    console.error = function () {
+      try { window.__errs.push('console.error: ' + Array.prototype.join.call(arguments, ' ')); } catch (e) {}
+      origError.apply(console, arguments);
+    };
+  }
+
   let mode = (params.get('mode') || '').toLowerCase();
   const narrow = window.matchMedia('(max-width: 760px)').matches;
   if (mode !== 'wall' && mode !== 'draw') mode = narrow ? 'draw' : 'wall';
