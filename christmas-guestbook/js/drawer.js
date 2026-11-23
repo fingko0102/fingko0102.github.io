@@ -174,7 +174,8 @@
       const stroke = {
         color: color,
         erase: erasing,
-        w: SIZES[sizeIdx] / (cw || 360),
+        // 지우개는 붓보다 조금 크게 해서 가장자리가 남지 않게
+        w: (erasing ? SIZES[sizeIdx] * 1.7 : SIZES[sizeIdx]) / (cw || 360),
         pts: [pos(e)]
       };
       strokes.push(stroke);
