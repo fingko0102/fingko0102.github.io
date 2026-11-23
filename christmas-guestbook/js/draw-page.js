@@ -24,9 +24,7 @@
       if (serverOn()) {
         // 서버 DB에 바로 저장되므로 P2P 연결을 기다리지 않고 초록 불로 알린다
         badge.classList.add('live');
-        text = '서버 DB 연결됨' +
-          (state === 'live' ? ' · 실시간 연결' : '') +
-          (lastCount > 0 ? ' · ' + lastCount : '');
+        text = '서버 DB 연결됨' + (lastCount > 0 ? ' · ' + lastCount : '');
       } else if (state === 'live') {
         badge.classList.add('live');
         text = '미디어월 연결' + (lastCount > 0 ? ' · ' + lastCount : '');
