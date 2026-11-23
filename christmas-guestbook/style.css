@@ -400,7 +400,7 @@ svg{display:block}
     padding:0 2px;text-align:left;order:1;
   }
   .join-card{order:2;left:auto;right:auto;bottom:auto;top:auto;gap:11px;padding:11px 12px}
-  .foot-stat{flex:0 0 auto;gap:4px}
+  .foot-stat{flex:0 0 auto;gap:6px}
   .count{font-size:18px;line-height:1.1}
   .count-label{display:inline;font-size:10px;white-space:nowrap}
   .host-status{
