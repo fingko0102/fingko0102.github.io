@@ -62,9 +62,9 @@
     function area() {
       const W = window.innerWidth, H = window.innerHeight;
       if (W < 760) {
-        return { x: W * 0.06, y: H * 0.19, w: W * 0.88, h: H * 0.46 };
+        return { x: W * 0.06, y: H * 0.19, w: W * 0.88, h: H * 0.38 };
       }
-      return { x: W * 0.08, y: H * 0.17, w: W * 0.84, h: H * 0.5 };
+      return { x: W * 0.08, y: H * 0.16, w: W * 0.84, h: H * 0.44 };
     }
 
     function pickSize(W, H) {
