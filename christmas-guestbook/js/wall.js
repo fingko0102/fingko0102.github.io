@@ -72,12 +72,22 @@
       return Math.round(Math.max(82, Math.min(168, base * (0.135 + Math.random() * 0.055))));
     }
 
+    // 트리(무대)는 오너먼트가 비켜 가도록
+    function treeZone() {
+      const W = window.innerWidth, H = window.innerHeight;
+      const tw = Math.min(Math.min(0.45 * H, 410), 0.7 * W);
+      const th = tw * 1.3;
+      return { x0: W / 2 - tw * 0.62, x1: W / 2 + tw * 0.62, y0: H + 18 - th * 1.02, y1: H };
+    }
+
     function place(size) {
       const a = area();
+      const zone = treeZone();
       let best = null, bestScore = -1e9;
-      for (let i = 0; i < 44; i++) {
+      for (let i = 0; i < 60; i++) {
         const cx = a.x + a.w * (0.04 + Math.random() * 0.92);
         const cy = a.y + a.h * (0.05 + Math.random() * 0.9);
+        if (cx > zone.x0 && cx < zone.x1 && cy > zone.y0 - size * 0.35) continue;
         let minDist = 1e9;
         for (let k = 0; k < items.length; k++) {
           const it = items[k];
@@ -89,6 +99,7 @@
         if (minDist > bestScore) { bestScore = minDist; best = { x: cx, y: cy }; }
         if (minDist > size * 0.55) break;
       }
+      if (!best) best = { x: a.x + a.w * 0.5, y: a.y + a.h * 0.4 };
       return { nx: best.x / window.innerWidth, ny: best.y / window.innerHeight };
     }
 
