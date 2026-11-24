@@ -10,7 +10,8 @@
     { c: '#6fd3ff', light: 0 },
     { c: '#ff8ac6', light: 0 },
     { c: '#b48cff', light: 0 },
-    { c: '#ff9f43', light: 0 }
+    { c: '#ff9f43', light: 0 },
+    { c: '#000000', dark: 1 }   // 검은색 (어두운 배경에서도 보이게 테두리)
   ];
   const SIZES = [3, 7, 14];
 
@@ -35,8 +36,9 @@
         '<div class="tools">' +
           '<div class="palette" role="group" aria-label="색 고르기">' +
             PALETTE.map(function (p, i) {
-              return '<button type="button" class="swatch" data-i="' + i + '" data-light="' + p.light +
-                '" style="--c:' + p.c + '" aria-label="색 ' + (i + 1) + '"></button>';
+              return '<button type="button" class="swatch" data-i="' + i + '" data-light="' + p.light + '"' +
+                (p.dark ? ' data-dark="1"' : '') +
+                ' style="--c:' + p.c + '" aria-label="색 ' + (i + 1) + (p.dark ? ' 검은색' : '') + '"></button>';
             }).join('') +
           '</div>' +
           '<div class="tool-row">' +
@@ -55,7 +57,8 @@
           '<label class="field"><input class="nick" maxlength="12" autocomplete="off" placeholder="이름"></label>' +
           '<label class="field"><input class="bio" maxlength="40" autocomplete="off" placeholder="한마디 (예: 메리 크리스마스!)"></label>' +
         '</div>' +
-        '<button type="button" class="send-btn">' + ICON.send + '미디어월에 보내기</button>' +
+        '<button type="button" class="send-btn">' + ICON.send +
+          '<span>' + XG.escape(opts.sendLabel || '미디어월에 보내기') + '</span></button>' +
         '<div class="sent-card" hidden></div>' +
       '</div>';
 
@@ -78,12 +81,30 @@
     let sizeIdx = 1;
     let erasing = false;
     let rafPending = 0;
+    let baseImage = null;        // 수정 모드에서 불러온 기존 그림(맨 아래층)
+    const editMode = !!(opts.initial && opts.initial.id);
+    const editArt = editMode ? { id: opts.initial.id, ts: Number(opts.initial.ts) || 0 } : null;
 
     /* ---------- 이름 기억 ---------- */
     try {
       const saved = localStorage.getItem('fgxmas-nick');
       if (saved) nick.value = saved;
     } catch (e) {}
+
+    /* ---------- 수정 모드: 기존 그림·이름·한마디를 그대로 불러온다 ---------- */
+    if (editMode) {
+      if (opts.initial.name) nick.value = String(opts.initial.name).slice(0, 12);
+      if (opts.initial.msg) bio.value = String(opts.initial.msg).slice(0, 40);
+      if (opts.initial.url) {
+        hint.classList.add('gone');
+        const img = new Image();
+        img.onload = function () {
+          baseImage = img;
+          if (cw) render(); else layout();
+        };
+        img.src = opts.initial.url;
+      }
+    }
 
     /* ---------- 캔버스 크기 ---------- */
     function fit() {
@@ -152,6 +173,16 @@
     function render() {
       rafPending = 0;
       ctx.clearRect(0, 0, cw, ch);
+      // 수정 모드: 기존 그림을 맨 아래층에 깔고, 그 위에 이어 그린다
+      if (baseImage) {
+        const iw = baseImage.naturalWidth || baseImage.width || 0;
+        const ih = baseImage.naturalHeight || baseImage.height || 0;
+        if (iw && ih) {
+          const s = Math.min(cw / iw, ch / ih);
+          const dw = iw * s, dh = ih * s;
+          ctx.drawImage(baseImage, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
+        }
+      }
       for (let i = 0; i < strokes.length; i++) paint(strokes[i]);
     }
     function schedule() {
@@ -242,21 +273,23 @@
         if (i >= 0) strokes.splice(i, 1);
       } else if (op.type === 'clear') {
         strokes = op.prev.slice();
+        if ('prevBase' in op) baseImage = op.prevBase;
       }
       schedule();
     });
 
     host.querySelector('[data-act="clear"]').addEventListener('click', function () {
-      if (!strokes.length) { XG.toast('이미 비어 있어요'); return; }
-      history.push({ type: 'clear', prev: strokes.slice() });
+      if (!strokes.length && !baseImage) { XG.toast('이미 비어 있어요'); return; }
+      history.push({ type: 'clear', prev: strokes.slice(), prevBase: baseImage });
       strokes = [];
+      baseImage = null;          // 수정 모드에서도 빈 캔버스에서 새로 그릴 수 있게
       schedule();
       XG.toast('전체 지웠어요 · 되돌리기로 복구할 수 있어요');
     });
 
     /* ---------- 내보내기 ---------- */
     function exportPng() {
-      if (!cw || !ch || !strokes.length) return null;
+      if (!cw || !ch) return null;
       const W = pad.width, H = pad.height;
       let data;
       try { data = ctx.getImageData(0, 0, W, H).data; } catch (e) { return null; }
@@ -310,7 +343,7 @@
     }
 
     sendBtn.addEventListener('click', function () {
-      if (!strokes.length) {
+      if (!strokes.length && !baseImage) {
         XG.toast('먼저 그림을 그려보세요');
         const frame = host.querySelector('.pad-frame');
         frame.animate && frame.animate(
@@ -324,11 +357,12 @@
       const name = (nick.value || '').trim().slice(0, 12);
       if (name) { try { localStorage.setItem('fgxmas-nick', name); } catch (e) {} }
       const payload = {
-        id: 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        // 수정 모드: 같은 id를 그대로 두고 ts만 더 크게 올려 서버·저장소가 덮어쓰게 한다
+        id: editMode ? editArt.id : 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
         url: url,
         name: name,
         msg: (bio.value || '').trim().slice(0, 40),
-        ts: Date.now()
+        ts: editMode ? Math.max(Date.now(), (Number(editArt.ts) || 0) + 1) : Date.now()
       };
       sendBtn.disabled = true;
       let result;
@@ -339,6 +373,11 @@
       }
       Promise.resolve(result).then(function (info) {
         sendBtn.disabled = false;
+        if (editMode) {
+          // 수정 저장: 보냄 카드 대신 화면을 닫고 알린다
+          if (typeof opts.onSaved === 'function') opts.onSaved(payload, info);
+          return;
+        }
         showSent(payload, typeof info === 'string' ? info : undefined);
         strokes = []; history = []; render();
         bio.value = '';
@@ -352,7 +391,8 @@
 
     return {
       fit: fit,
-      clear: function () { strokes = []; history = []; render(); }
+      clear: function () { strokes = []; history = []; baseImage = null; render(); },
+      editId: editMode ? editArt.id : null
     };
   };
 })();

@@ -35,6 +35,7 @@
     const room = String(cfg.room || 'XMAS');
     const role = cfg.role === 'guest' || cfg.role === 'draw' ? 'guest' : 'wall';
     const onArt = cfg.onArt || function () {};
+    const onArtEdit = cfg.onArtEdit || onArt;
     const onDelete = cfg.onDelete || function () {};
     const onStatus = cfg.onStatus || function () {};
     const onCount = cfg.onCount || function () {};
@@ -48,6 +49,7 @@
     const hasPeerJS = typeof window.Peer === 'function';
 
     const seen = Object.create(null);
+    const seenTs = Object.create(null);   // id별로 마지막으로 받은 ts (수정본 판별)
     const seenDeleted = Object.create(null);
     const conns = [];          // Host: [{ c, kind }]
     let peer = null;
@@ -105,8 +107,16 @@
     function deliver(data) {
       const art = cleanArt(data);
       if (!art) return null;
-      if (seen[art.id]) return null;
+      if (seen[art.id]) {
+        // 같은 id라도 ts가 더 크면 수정본으로 보고 화면을 바꾼다
+        if ((art.ts || 0) > (seenTs[art.id] || 0)) {
+          seenTs[art.id] = art.ts;
+          if (!(XG.artStore && XG.artStore.isDeleted && XG.artStore.isDeleted(art.id))) onArtEdit(art);
+        }
+        return null;
+      }
       seen[art.id] = 1;
+      seenTs[art.id] = art.ts || 0;
       // 이미 지운 그림은 어떤 경로로 와도 되살리지 않는다
       if (seenDeleted[art.id]) return null;
       if (XG.artStore && XG.artStore.isDeleted && XG.artStore.isDeleted(art.id)) return null;
@@ -134,8 +144,9 @@
     }
 
     /* ---------- 메시지 ---------- */
-    function relay(art, except) {
+    function relay(art, except, type) {
       const msg = wire(art);
+      if (type) msg.t = type;
       postBC(msg);
       for (let i = 0; i < conns.length; i++) {
         if (conns[i] === except) continue;
@@ -196,6 +207,20 @@
       if (t === 'art') {
         const art = deliver(data);
         if (art && isHost && src !== 'bc') relay(art, entry || null);
+        return;
+      }
+      if (t === 'art-edit') {
+        // 수정본: 같은 id를 그대로 두고 내용만 바꿔 덮어쓴다
+        const art = cleanArt(data);
+        if (!art) return;
+        if (seenDeleted[art.id]) return;
+        if (XG.artStore && XG.artStore.isDeleted && XG.artStore.isDeleted(art.id)) return;
+        if ((art.ts || 0) > (seenTs[art.id] || 0)) {
+          seen[art.id] = 1;
+          seenTs[art.id] = art.ts;
+          onArtEdit(art);
+        }
+        if (isHost && src !== 'bc') relay(art, entry || null, 'art-edit');
         return;
       }
       if (t === 'sync-arts') { mergeIncoming(data.arts); return; }
@@ -518,6 +543,23 @@
           postBC({ t: 'delete', id: key });
           if (hostConn && hostConn.open) {
             try { hostConn.send({ t: 'delete', id: key }); } catch (e) {}
+          }
+        }
+        return true;
+      },
+      sendEdit: function (payload) {
+        const art = cleanArt(payload);
+        if (!art) return false;
+        seen[art.id] = 1;
+        seenTs[art.id] = Math.max(seenTs[art.id] || 0, art.ts || 0);
+        const msg = wire(art);
+        msg.t = 'art-edit';
+        if (isHost) {
+          relay(art, null, 'art-edit');
+        } else {
+          postBC(msg);
+          if (hostConn && hostConn.open) {
+            try { hostConn.send(msg); } catch (e) {}
           }
         }
         return true;

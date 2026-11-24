@@ -343,6 +343,12 @@
     if (XG.api && XG.api.onChange) XG.api.onChange(renderStatus);
 
     /* ---------- 오너먼트 ---------- */
+    function tagHtml(art) {
+      return art.msg
+        ? '<b>' + XG.escape(art.name || '익명') + '</b><span>' + XG.escape(art.msg) + '</span>'
+        : '<b>' + XG.escape(art.name || '익명') + '</b>';
+    }
+
     function addArt(art, opt) {
       opt = opt || {};
       if (!art || !art.url) return;
@@ -365,9 +371,7 @@
       setTagSide(el, spot.nx);
       el.setAttribute('aria-label', (art.name || '익명') + ' 님의 그림 · 길게 누르면 지우기');
 
-      const tagText = art.msg
-        ? '<b>' + XG.escape(art.name || '익명') + '</b><span>' + XG.escape(art.msg) + '</span>'
-        : '<b>' + XG.escape(art.name || '익명') + '</b>';
+      const tagText = tagHtml(art);
       el.innerHTML =
         '<div class="orn-float"><div class="orn-pop">' +
           '<span class="orn-halo"></span>' +
@@ -397,7 +401,7 @@
           ev.stopPropagation();
           return;
         }
-        showArt(art);
+        showArt(known[art.id] || art);   // 수정된 뒤에도 최신 내용을 보여 준다
       });
       el.addEventListener('contextmenu', function (ev) { ev.preventDefault(); });
 
@@ -443,17 +447,92 @@
 
     /* ---------- 눌러서 크게 보기 ---------- */
     function showArt(art) {
-      if (!art || (XG.artStore && XG.artStore.isDeleted(art.id))) return;
+      if (!art || !art.id) return;
+      art = known[art.id] || art;
+      if (XG.artStore && XG.artStore.isDeleted(art.id)) return;
       const card = XG.modal.open(
         '<div class="art-view">' +
           '<img src="' + art.url + '" alt="">' +
           '<p class="art-name">' + XG.escape(art.name || '익명') + '</p>' +
           (art.msg ? '<p class="art-msg">' + XG.escape(art.msg) + '</p>' : '') +
-          '<button type="button" class="art-close" data-close="1">닫기</button>' +
+          '<div class="art-actions">' +
+            '<button type="button" class="btn-line art-edit">수정</button>' +
+            '<button type="button" class="art-close" data-close="1">닫기</button>' +
+          '</div>' +
         '</div>'
       );
       const btn = card.querySelector('.art-close');
       if (btn) btn.addEventListener('click', function () { XG.modal.close(); });
+      const editBtn = card.querySelector('.art-edit');
+      if (editBtn) editBtn.addEventListener('click', function () { openEdit(art); });
+    }
+
+    /* ---------- 그림 수정 (그림·이름·한마디) ---------- */
+    // 같은 id의 그림을 화면·저장소에 덮어쓴다 (더 새로운 ts일 때만)
+    function applyArtUpdate(art) {
+      if (!art || !art.id) return null;
+      if (XG.artStore && XG.artStore.isDeleted(art.id)) return null;
+      const prev = known[art.id];
+      if (prev && (prev.ts || 0) > (art.ts || 0)) return null;
+      known[art.id] = art;
+      schedulePersist();
+
+      const it = items.filter(function (x) { return x.id === art.id; })[0];
+      if (!it) return null;
+      it.art = art;
+      const img = it.el.querySelector('.orn-img');
+      if (img && img.getAttribute('src') !== art.url) img.setAttribute('src', art.url);
+      const tag = it.el.querySelector('.orn-tag');
+      if (tag) tag.innerHTML = tagHtml(art);
+      it.el.setAttribute('aria-label', (art.name || '익명') + ' 님의 그림 · 수정/삭제');
+      return it;
+    }
+
+    function saveEdit(payload, oldArt) {
+      if (!oldArt || !oldArt.id || !payload || !payload.url) return '수정하지 못했어요';
+      const next = {
+        id: oldArt.id,
+        url: payload.url,
+        name: String(payload.name || '').slice(0, 12),
+        msg: String(payload.msg || '').slice(0, 40),
+        ts: Math.max(Date.now(), (Number(oldArt.ts) || 0) + 1)
+      };
+      // 1) 화면 + 이 기기 저장소(같은 id로 덮어쓰기)
+      applyArtUpdate(next);
+      // 2) 서버 DB (Worker가 같은 id·더 큰 ts를 덮어쓴다)
+      if (XG.api && XG.api.enabled() && XG.api.putArt) {
+        try { XG.api.putArt(room, next).catch(function () {}); } catch (e) {}
+      }
+      // 3) 열려 있는 다른 창·월에도 같은 id로 알린다
+      if (bus && bus.sendEdit) { try { bus.sendEdit(next); } catch (e) {} }
+      return '수정했어요';
+    }
+
+    function openEdit(art) {
+      if (!art || !art.id) return;
+      art = known[art.id] || art;
+      if (XG.artStore && XG.artStore.isDeleted(art.id)) return;
+      const card = XG.modal.open(
+        '<div class="sheet">' +
+          '<div class="sheet-head">' +
+            '<div><b>방명록 수정</b><div class="sheet-sub">그림·이름·한마디를 고칠 수 있어요</div></div>' +
+            '<button type="button" class="sheet-close" data-close="1" aria-label="취소">' +
+              '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
+          '</div>' +
+          '<div class="drawer-host" id="edit-drawer"></div>' +
+        '</div>'
+      );
+      const close = card.querySelector('.sheet-close');
+      if (close) close.addEventListener('click', function () { XG.modal.close(); });
+      XG.createDrawer(card.querySelector('#edit-drawer'), {
+        initial: { id: art.id, url: art.url, name: art.name, msg: art.msg, ts: art.ts },
+        sendLabel: '수정 저장',
+        onSend: function (payload) { return saveEdit(payload, art); },
+        onSaved: function () {
+          XG.modal.close();
+          XG.toast('방명록을 수정했어요');
+        }
+      });
     }
 
     /* ---------- 꾹 누르기 → 삭제 ---------- */
@@ -532,6 +611,8 @@
     }
 
     function openDelete(art) {
+      if (!art || !art.id) return;
+      art = known[art.id] || art;
       const card = XG.modal.open(
         '<div class="art-view del-view">' +
           '<img class="del-thumb" src="' + art.url + '" alt="">' +
@@ -545,6 +626,7 @@
             '<p class="del-err" hidden>비밀번호가 틀렸어요</p>' +
             '<div class="del-actions">' +
               '<button type="button" class="btn-line del-cancel">취소</button>' +
+              '<button type="button" class="btn-line del-edit">수정</button>' +
               '<button type="submit" class="btn-danger del-ok">삭제</button>' +
             '</div>' +
           '</form>' +
@@ -556,6 +638,7 @@
       const err = card.querySelector('.del-err');
       const ok = card.querySelector('.del-ok');
       const cancel = card.querySelector('.del-cancel');
+      const editBtn = card.querySelector('.del-edit');
 
       function showErr(msg) {
         err.textContent = msg;
@@ -563,6 +646,7 @@
       }
 
       if (cancel) cancel.addEventListener('click', function () { XG.modal.close(); });
+      if (editBtn) editBtn.addEventListener('click', function () { openEdit(art); });
       setTimeout(function () { try { pass.focus(); } catch (e) {} }, 60);
 
       form.addEventListener('submit', function (ev) {
@@ -644,6 +728,9 @@
             if (!shown) fresh.push(known[a.id] || a);
           } else if (!known[a.id] && !shown) {
             fresh.push(a);
+          } else if (known[a.id] && (a.ts || 0) > (known[a.id].ts || 0)) {
+            // 다른 기기에서 수정된 그림: 더 새로운 ts면 화면·저장소도 바꾼다
+            applyArtUpdate(a);
           }
         }
 
@@ -731,6 +818,7 @@
       role: 'wall',
       getArts: allArts,
       onArt: function (art) { addArt(art); },
+      onArtEdit: function (art) { applyArtUpdate(art); },
       onDelete: function (id) { commitDelete(id, false); },
       onStatus: function (s, info) {
         peerState = s;
