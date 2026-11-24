@@ -11,8 +11,8 @@
   const MOVE_TOLERANCE = 12;   // 이보다 많이 움직이면 꾹 누르기 취소(px)
   const SYNC_MS = 4000;        // 서버와 맞추는 주기 (다른 기기 그림이 빨리 떠오르게 4초)
 
-  // 지우기 비밀번호의 SHA-256 (평문은 코드에 두지 않는다)
-  const DELETE_SHA256 = 'c0c4a69b17a7955ac230bfc8db4a123eaa956ccf3c0022e68b8d4e2f5b699d1f';
+  // 수정·삭제에 함께 쓰는 비밀번호의 SHA-256 (평문은 코드에 두지 않는다)
+  const PASS_SHA256 = 'c0c4a69b17a7955ac230bfc8db4a123eaa956ccf3c0022e68b8d4e2f5b699d1f';
 
   /* ---------- SHA-256 ---------- */
   const SHA_K = [
@@ -464,7 +464,8 @@
       const btn = card.querySelector('.art-close');
       if (btn) btn.addEventListener('click', function () { XG.modal.close(); });
       const editBtn = card.querySelector('.art-edit');
-      if (editBtn) editBtn.addEventListener('click', function () { openEdit(art); });
+      // 수정도 삭제와 같은 비밀번호를 먼저 확인한다
+      if (editBtn) editBtn.addEventListener('click', function () { openLock(art, 'edit'); });
     }
 
     /* ---------- 그림 수정 (그림·이름·한마디) ---------- */
@@ -610,33 +611,64 @@
       }
     }
 
-    function openDelete(art) {
+    /* ---------- 비밀번호 확인 창 (수정·삭제 공용) ---------- */
+    // 수정 진입과 삭제가 같은 비밀번호(PASS_SHA256)를 쓴다.
+    // mode 'edit': 맞으면 수정 화면을 연다  /  mode 'delete': 맞으면 그림을 지운다
+    const LOCK_COPY = {
+      edit: {
+        head: '방명록 수정',
+        sub: '이 그림을 수정하려면 비밀번호를 넣어 주세요.',
+        field: '수정 비밀번호',
+        empty: '비밀번호를 입력해 주세요',
+        ok: '수정'
+      },
+      delete: {
+        head: '방명록 삭제',
+        sub: '이 그림을 지울까요? 비밀번호를 넣어 주세요.',
+        field: '삭제 비밀번호',
+        empty: '비밀번호를 입력해 주세요',
+        ok: '삭제'
+      }
+    };
+
+    function lockHtml(art, mode, prefill) {
+      const c = LOCK_COPY[mode] || LOCK_COPY.delete;
+      const edit = mode === 'edit';
+      return '<div class="art-view del-view lock-view" data-lock="' + (edit ? 'edit' : 'delete') + '">' +
+        '<img class="del-thumb" src="' + art.url + '" alt="">' +
+        '<p class="art-name">' + XG.escape(art.name || '익명') + '</p>' +
+        '<p class="lock-head">' + c.head + '</p>' +
+        '<p class="del-sub">' + c.sub + '</p>' +
+        '<form class="del-form" novalidate>' +
+          '<label class="field del-field">' +
+            '<input class="del-pass" type="password" placeholder="비밀번호 입력"' +
+              (prefill ? ' value="' + XG.escape(prefill) + '"' : '') +
+              ' autocomplete="off" autocapitalize="off" spellcheck="false" ' +
+              'aria-label="' + c.field + '">' +
+          '</label>' +
+          '<p class="del-err" hidden>비밀번호가 틀렸어요</p>' +
+          '<div class="del-actions">' +
+            '<button type="button" class="btn-line del-cancel">취소</button>' +
+            (edit
+              ? '<button type="submit" class="btn-gold lock-ok">' + c.ok + '</button>'
+              : '<button type="button" class="btn-line del-edit">수정</button>' +
+                '<button type="submit" class="btn-danger del-ok">삭제</button>') +
+          '</div>' +
+        '</form>' +
+      '</div>';
+    }
+
+    function openLock(art, mode, prefill) {
       if (!art || !art.id) return;
       art = known[art.id] || art;
-      const card = XG.modal.open(
-        '<div class="art-view del-view">' +
-          '<img class="del-thumb" src="' + art.url + '" alt="">' +
-          '<p class="art-name">' + XG.escape(art.name || '익명') + '</p>' +
-          '<p class="del-sub">이 그림을 지울까요? 비밀번호를 넣어 주세요.</p>' +
-          '<form class="del-form" novalidate>' +
-            '<label class="field del-field">' +
-              '<input class="del-pass" type="password" placeholder="비밀번호 입력" autocomplete="off" ' +
-                'autocapitalize="off" spellcheck="false" aria-label="삭제 비밀번호">' +
-            '</label>' +
-            '<p class="del-err" hidden>비밀번호가 틀렸어요</p>' +
-            '<div class="del-actions">' +
-              '<button type="button" class="btn-line del-cancel">취소</button>' +
-              '<button type="button" class="btn-line del-edit">수정</button>' +
-              '<button type="submit" class="btn-danger del-ok">삭제</button>' +
-            '</div>' +
-          '</form>' +
-        '</div>'
-      );
+      if (XG.artStore && XG.artStore.isDeleted(art.id)) return;
+      mode = mode === 'edit' ? 'edit' : 'delete';
 
+      const card = XG.modal.open(lockHtml(art, mode, prefill));
       const form = card.querySelector('.del-form');
       const pass = card.querySelector('.del-pass');
       const err = card.querySelector('.del-err');
-      const ok = card.querySelector('.del-ok');
+      const ok = card.querySelector('.lock-ok') || card.querySelector('.del-ok');
       const cancel = card.querySelector('.del-cancel');
       const editBtn = card.querySelector('.del-edit');
 
@@ -645,29 +677,33 @@
         err.hidden = false;
       }
 
+      function fail() {
+        showErr('비밀번호가 틀렸어요');
+        if (ok) ok.disabled = false;
+        try { pass.focus(); pass.select(); } catch (e) {}
+      }
+
       if (cancel) cancel.addEventListener('click', function () { XG.modal.close(); });
-      if (editBtn) editBtn.addEventListener('click', function () { openEdit(art); });
+      if (editBtn) editBtn.addEventListener('click', function () {
+        // 꾹 누르기 창의 '수정'도 수정 화면을 바로 열지 않고 수정용 비밀번호 확인을 거친다
+        openLock(art, 'edit', pass.value || '');
+      });
       setTimeout(function () { try { pass.focus(); } catch (e) {} }, 60);
 
       form.addEventListener('submit', function (ev) {
         ev.preventDefault();
         const value = pass.value || '';
-        if (!value) { showErr('비밀번호를 입력해 주세요'); return; }
-        ok.disabled = true;
+        if (!value) { showErr(LOCK_COPY[mode].empty); return; }
+        if (ok) ok.disabled = true;
         sha256Hex(value).then(function (hex) {
-          if (hex !== DELETE_SHA256) {
-            showErr('비밀번호가 틀렸어요');
-            ok.disabled = false;
-            try { pass.select(); } catch (e) {}
+          if (hex !== PASS_SHA256) { fail(); return null; }
+          if (mode === 'edit') {
+            openEdit(art);          // 같은 자리에서 수정 화면으로 바뀐다
             return null;
           }
           if (XG.api && XG.api.enabled()) {
             return XG.api.deleteArt(room, art.id, value).then(function (res) {
-              if (res && res.wrongPassword) {
-                showErr('비밀번호가 틀렸어요');
-                ok.disabled = false;
-                return false;
-              }
+              if (res && res.wrongPassword) { fail(); return false; }
               // 서버가 꺼져 있으면(offline) 이미 확인한 비밀번호로 로컬에서 지운다
               return true;
             });
@@ -679,10 +715,13 @@
           XG.modal.close();
           XG.toast('그림을 지웠어요');
         }).catch(function () {
-          ok.disabled = false;
+          if (ok) ok.disabled = false;
         });
       });
     }
+
+    // 꾹 누르기 → 삭제 확인
+    function openDelete(art) { openLock(art, 'delete'); }
 
     // 화면·저장소·다른 월에서 같은 그림을 지운다
     function commitDelete(id, propagate) {
