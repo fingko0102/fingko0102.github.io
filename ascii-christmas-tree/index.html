@@ -67,6 +67,8 @@
   #codeScroll{
     flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;
     scrollbar-width:thin;scrollbar-color:#1d3348 transparent;
+    -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 16px,#000 calc(100% - 16px),transparent 100%);
+    mask-image:linear-gradient(to bottom,transparent 0,#000 16px,#000 calc(100% - 16px),transparent 100%);
     padding:6px 0 10px;
   }
   #codeScroll::-webkit-scrollbar{width:7px}
